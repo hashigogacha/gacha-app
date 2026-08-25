@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ハシゴガチャ - 今夜のハシゴ酒をスマートに</title>
+  <style>
+    :root {
+      --bg-color: #f7f9fa;
+      --card-bg: #ffffff;
+      --primary: #ff5252;
+      --primary-hover: #ff3838;
+      --accent: #f59e0b;
+      --text-main: #1f2937;
+      --text-sub: #6b7280;
+      --border-color: #e5e7eb;
+      --line-color: #06c755;
+      --card-radius: 16px;
+      --btn-radius: 12px;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .app-header {
+      background: var(--card-bg);
+      border-radius: var(--card-radius);
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+    }
+    .app-logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .app-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--card-radius);
+      padding: 18px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow);
+    }
+
+    .guide-title {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .guide-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .guide-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.82rem;
+    }
+    .step-badge {
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: bold;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .step-text {
+      color: var(--text-main);
+      line-height: 1.4;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-top: 14px;
+      display: block;
+      color: var(--text-main);
+    }
+    label:first-child { margin-top: 0; }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 12px;
+      border-radius: var(--btn-radius);
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--text-main);
+      font-size: 0.95rem;
+      box-sizing: border-box;
+      margin-top: 6px;
+    }
+
+    .location-box {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .location-box input {
+      flex: 1;
+      margin-top: 0;
+    }
+    .gps-btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 0 14px;
+      border-radius: var(--btn-radius);
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .btn-option {
+      background: #f3f4f6;
+      border: 2px solid transparent;
+      padding: 10px 4px;
+      border-radius: var(--btn-radius);
+      font-size: 0.82rem;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-sub);
+    }
+    .btn-option.active {
+      background: #fff7ed;
+      border-color: var(--accent);
+      color: #c2410c;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      font-size: 0.88rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .checkbox-container input {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .btn-gacha {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      border: none;
+      padding: 18px;
+      border-radius: var(--btn-radius);
+      font-size: 1.3rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255, 82, 82, 0.3);
+      margin-top: 8px;
+      transition: transform 0.1s;
+    }
+    .btn-gacha:active { transform: scale(0.97); }
+
+    #setupView, #resultView { width: 100%; }
+    #resultView { display: none; }
+
+    .gacha-machine-container {
+      text-align: center;
+      padding: 30px 0;
+    }
+    .gacha-machine {
+      font-size: 5rem;
+      display: inline-block;
+    }
+    .gacha-machine.shake {
+      animation: gachaShake 0.4s infinite;
+    }
+    @keyframes gachaShake {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(-5px, 5px) rotate(-10deg); }
+      50% { transform: translate(5px, -5px) rotate(10deg); }
+      75% { transform: translate(-5px, -5px) rotate(-5deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+    .capsule {
+      font-size: 4rem;
+      display: inline-block;
+      margin-top: 10px;
+      animation: popCapsule 0.5s ease-out forwards;
+    }
+    @keyframes popCapsule {
+      0% { transform: scale(0) translateY(-50px); opacity: 0; }
+      80% { transform: scale(1.2) translateY(0); opacity: 1; }
+      100% { transform: scale(1) translateY(0); }
+    }
+    .roulette-status {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin-top: 15px;
+    }
+
+    .result-card {
+      border: 2px solid var(--accent);
+      animation: cardPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes cardPop {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .store-catch {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      font-weight: bold;
+    }
+    .store-name {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin: 4px 0 8px 0;
+    }
+    .store-info-badge {
+      display: inline-block;
+      background: #f3f4f6;
+      color: var(--text-main);
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .store-detail {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .caution-box {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.78rem;
+      color: #991b1b;
+      margin-top: 12px;
+      text-align: left;
+    }
+
+    .map-btn {
+      display: block;
+      width: 100%;
+      background: #3b82f6;
+      color: white;
+      text-decoration: none;
+      padding: 14px;
+      border-radius: var(--btn-radius);
+      font-weight: bold;
+      text-align: center;
+      margin-top: 12px;
+      box-sizing: border-box;
+    }
+    .line-btn {
+      display: block;
+      width: 100%;
+      background: var(--line-color);
+      color: white;
+      text-decoration: none;
+      padding: 14px;
+      border-radius: var(--btn-radius);
+      font-weight: bold;
+      text-align: center;
+      margin-top: 8px;
+      box-sizing: border-box;
+    }
+
+    .action-btns {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .retry-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: var(--btn-radius);
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .back-btn {
+      background: #e5e7eb;
+      color: var(--text-main);
+      border: none;
+      padding: 12px;
+      border-radius: var(--btn-radius);
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .candidates-section { margin-top: 24px; }
+    .candidates-header {
+      font-size: 1.05rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .candidate-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border-color);
+    }
+    .candidate-name {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--text-main);
+    }
+    .more-btn {
+      width: 100%;
+      background: #ffffff;
+      border: 2px solid var(--border-color);
+      color: var(--text-main);
+      padding: 12px;
+      border-radius: var(--btn-radius);
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .ad-container {
+      margin: 16px 0;
+      padding: 12px;
+      background: #f9fafb;
+      border: 1px dashed #d1d5db;
+      border-radius: var(--btn-radius);
+      text-align: center;
+      color: var(--text-sub);
+      font-size: 0.75rem;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="app-header">
+    <div class="app-logo">🍻 ハシゴガチャ</div>
+    <div class="app-subtitle">今夜のハシゴ酒を、もっとスマートに</div>
+  </div>
+
+  <div id="setupView">
+    <div class="card">
+      <div class="guide-title">💡 ハシゴガチャの使い方</div>
+      <div class="guide-steps">
+        <div class="guide-step">
+          <span class="step-badge">1</span>
+          <span class="step-text"><b>エリア指定</b>：駅名を入力、または「📍現在地」をタップ</span>
+        </div>
+        <div class="guide-step">
+          <span class="step-badge">2</span>
+          <span class="step-text"><b>条件選択</b>：今何軒目？・予算・タバコをセット</span>
+        </div>
+        <div class="guide-step">
+          <span class="step-badge">3</span>
+          <span class="step-text"><b>ガチャを引く</b>：運命のお店が決定！LINE共有もOK</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>出発エリア（駅名・現在地）</label>
+      <div class="location-box">
+        <input type="text" id="areaInput" placeholder="例: 谷塚駅、渋谷駅" value="谷塚駅">
+        <button class="gps-btn" onclick="getCurrentLocation()">📍 現在地</button>
+      </div>
+
+      <label>中心からの距離</label>
+      <select id="distanceRange">
+        <option value="1">🚶 徒歩3分以内（約300m）</option>
+        <option value="2">🚶 徒歩5分以内（約500m）</option>
+        <option value="3" selected>🚶 徒歩10分以内（約1km・定番）</option>
+        <option value="4">🚶 徒歩20分以内（約2km）</option>
+        <option value="5">🚗 車・電車移動（約3km）</option>
+      </select>
+
+      <label>今何軒目？</label>
+      <div class="btn-group" id="stageGroup">
+        <div class="btn-option active" onclick="selectOption('stage', '居酒屋', this)">1軒目<br><small>(ガッツリ)</small></div>
+        <div class="btn-option" onclick="selectOption('stage', 'バー バル 居酒屋', this)">2軒目<br><small>(サク飲み)</small></div>
+        <div class="btn-option" onclick="selectOption('stage', 'ラーメン バー', this)">締め<br><small>(ラーメン/バー)</small></div>
+      </div>
+
+      <label>予算（上限）</label>
+      <select id="budgetTier">
+        <option value="" selected>指定なし（おまかせ）</option>
+        <option value="1000">〜1,000円（サクッと1杯・締め）</option>
+        <option value="2000">〜2,000円（2軒目のサク飲み）</option>
+        <option value="3000">〜3,000円（定番の居酒屋）</option>
+        <option value="4000">〜4,000円（しっかり1軒目）</option>
+        <option value="5000">〜5,000円（ちょっと贅沢）</option>
+        <option value="6000">6,000円〜（特別な夜・高級店）</option>
+      </select>
+
+      <label>ジャンル（気分）</label>
+      <select id="genreInput">
+        <option value="" selected>指定なし（おまかせ）</option>
+        <option value="海鮮 刺身">🐟 海鮮・お刺身</option>
+        <option value="焼き鳥 串焼き">🐓 焼き鳥・肉料理</option>
+        <option value="イタリアン バル">🍷 洋食・バル</option>
+        <option value="中華 餃子">🥟 中華・餃子</option>
+        <option value="ラーメン">🍜 ラーメン</option>
+      </select>
+
+      <label>タバコ</label>
+      <select id="smokingInput">
+        <option value="" selected>指定なし</option>
+        <option value="1">🚭 全席禁煙</option>
+        <option value="0">🚬 喫煙席あり/喫煙可</option>
+      </select>
+
+      <label class="checkbox-container">
+        <input type="checkbox" id="openNowCheck" checked>
+        <span>今「営業中」のお店のみ検索する</span>
+      </label>
+    </div>
+
+    <button class="btn-gacha" onclick="startGachaProcess()">🎰 ガチャを回す！</button>
+  </div>
+
+  <div id="resultView">
+    <div id="animationArea" class="card">
+      <div class="gacha-machine-container">
+        <div id="gachaIcon" class="gacha-machine">🎰</div>
+        <div id="capsuleIcon" style="display:none;" class="capsule">🎁</div>
+        <div id="rouletteStatus" class="roulette-status">運命のお店を検索中...</div>
+      </div>
+    </div>
+
+    <div id="resultStoreCard" class="card result-card" style="display: none;">
+      <div id="resultStoreContent"></div>
+      <div class="caution-box">
+        ※席の空き状況や最新の営業時間は変動する可能性があるため、ご来店前に直接店舗へご確認ください。
+      </div>
+      <div id="mapLinkArea"></div>
+      <div id="lineShareArea"></div>
+    </div>
+
+    <div id="actionArea" class="action-btns" style="display: none;">
+      <button class="retry-btn" onclick="retryGacha()">🎰 もう一度ガチャを引く</button>
+      <button class="back-btn" onclick="goToSetup()">⚙️ 条件を変更する</button>
+    </div>
+
+    <div class="ad-container" id="mainAdArea">
+      <div style="font-weight:bold; margin-bottom:4px;">スポンサーリンク</div>
+      <div style="font-size:0.7rem; color:#9ca3af;">[ 広告スペース ]</div>
+    </div>
+
+    <div id="candidatesSection" class="candidates-section" style="display: none;">
+      <div class="candidates-header">
+        <span>📋 他の候補店一覧</span>
+        <span id="candidateCount" style="font-size:0.85rem; color:var(--text-sub);"></span>
+      </div>
+      <div id="candidatesList"></div>
+      <button id="moreCandidatesBtn" class="more-btn" onclick="renderNextCandidatesChunk()">さらに5件表示（もっと見る）</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let selectedStage = '居酒屋';
+  let currentGeoLocation = null;
+  let allCandidateStores = [];
+  let displayedCandidateCount = 0;
+
+  function selectOption(category, value, element) {
+    if (category === 'stage') {
+      document.querySelectorAll('#stageGroup .btn-option').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      selectedStage = value;
+    }
+  }
+
+  function getCurrentLocation() {
+    if (!navigator.geolocation) {
+      alert('お使いのブラウザは位置情報（GPS）に対応していません。');
+      return;
+    }
+    const areaInput = document.getElementById('areaInput');
+    areaInput.value = "📍 現在地を取得中...";
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        currentGeoLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        areaInput.value = "📍 現在地付近";
+      },
+      () => {
+        alert('位置情報の取得に失敗しました。手動で駅名等を入力してください。');
+        areaInput.value = "谷塚駅";
+        currentGeoLocation = null;
+      }
+    );
+  }
+
+  function showResultView() {
+    document.getElementById('setupView').style.display = 'none';
+    document.getElementById('resultView').style.display = 'block';
+    document.getElementById('animationArea').style.display = 'block';
+    document.getElementById('resultStoreCard').style.display = 'none';
+    document.getElementById('actionArea').style.display = 'none';
+    document.getElementById('candidatesSection').style.display = 'none';
+    
+    const gachaIcon = document.getElementById('gachaIcon');
+    const capsuleIcon = document.getElementById('capsuleIcon');
+    gachaIcon.className = 'gacha-machine shake';
+    gachaIcon.innerText = '🎰';
+    capsuleIcon.style.display = 'none';
+    document.getElementById('rouletteStatus').innerText = 'ガシャコン！ ガシャコン！...';
+  }
+
+  function goToSetup() {
+    document.getElementById('resultView').style.display = 'none';
+    document.getElementById('setupView').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function startGachaProcess() {
+    const area = document.getElementById('areaInput').value.trim();
+    if (!area) {
+      alert('出発地を入力するか、「現在地」ボタンを押してください。');
+      return;
+    }
+    showResultView();
+    executeHotPepperSearch();
+  }
+
+  function retryGacha() {
+    showResultView();
+    executeHotPepperSearch();
+  }
+
+  // 自分のサーバーレスAPI (/api/search) を呼び出す処理
+  async function executeHotPepperSearch() {
+    const area = document.getElementById('areaInput').value.trim();
+    const range = document.getElementById('distanceRange').value;
+    const genre = document.getElementById('genreInput').value;
+    const smoking = document.getElementById('smokingInput').value;
+    const budgetTier = document.getElementById('budgetTier').value;
+    const openNowOnly = document.getElementById('openNowCheck').checked;
+
+    let keywordStr = selectedStage;
+    if (genre) keywordStr += ' ' + genre;
+    if (!area.includes("📍 現在地")) keywordStr += ' ' + area;
+
+    let query = `keyword=${encodeURIComponent(keywordStr)}`;
+    if (area.includes("📍 現在地") && currentGeoLocation) {
+      query += `&lat=${currentGeoLocation.lat}&lng=${currentGeoLocation.lng}&range=${range}`;
+    }
+    if (smoking !== "") {
+      query += `&non_smoking=${smoking}`;
+    }
+
+    try {
+      const response = await fetch(`/api/search?${query}`);
+      if (!response.ok) throw new Error('通信エラー');
+      
+      const data = await response.json();
+
+      if (!data.results || !data.results.shop || data.results.shop.length === 0) {
+        let msg = "条件に合うお店が見つかりませんでした。";
+        if (openNowOnly) msg += "\n※「今営業中のみ」のチェックを外して試してみてください。";
+        showSearchError(msg);
+        return;
+      }
+
+      let stores = data.results.shop;
+
+      if (budgetTier !== "") {
+        const maxBudget = parseInt(budgetTier, 10);
+        stores = stores.filter(shop => {
+          if (!shop.budget || !shop.budget.average) return true;
+          const priceMatch = shop.budget.average.match(/\d+/g);
+          if (priceMatch) {
+            const estPrice = parseInt(priceMatch[0], 10) * (priceMatch[0].length <= 2 ? 1000 : 1);
+            return maxBudget >= 6000 ? estPrice >= 5000 : estPrice <= maxBudget;
+          }
+          return true;
+        });
+      }
+
+      if (stores.length === 0) {
+        showSearchError("予算条件に合うお店が見つかりませんでした。条件を緩めてお試しください。");
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * stores.length);
+      const selectedStore = stores[randomIndex];
+      allCandidateStores = stores.filter((_, idx) => idx !== randomIndex).slice(0, 24);
+
+      playGachaAnimationAndRender(selectedStore);
+
+    } catch (err) {
+      showSearchError("サーバーとの通信に失敗しました。");
+    }
+  }
+
+  function showSearchError(msg) {
+    setTimeout(() => {
+      alert(msg);
+      goToSetup();
+    }, 800);
+  }
+
+  function playGachaAnimationAndRender(store) {
+    const gachaIcon = document.getElementById('gachaIcon');
+    const capsuleIcon = document.getElementById('capsuleIcon');
+    const rouletteStatus = document.getElementById('rouletteStatus');
+
+    setTimeout(() => {
+      gachaIcon.classList.remove('shake');
+      gachaIcon.style.display = 'none';
+      capsuleIcon.style.display = 'inline-block';
+      rouletteStatus.innerText = 'ポンッ！ 今夜の運命店が決定！';
+    }, 1200);
+
+    setTimeout(() => {
+      document.getElementById('animationArea').style.display = 'none';
+
+      const resultStoreContent = document.getElementById('resultStoreContent');
+      const storeCatch = store.catch || store.genre.catch || '話題のおすすめ酒場';
+      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.name + ' ' + store.address)}`;
+      const lineMsg = `今夜の飲み会は『${store.name}』に決定！\n📍詳細・マップはこちら👉 ${mapUrl}`;
+      const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(lineMsg)}`;
+
+      resultStoreContent.innerHTML = `
+        <div class="store-catch">🍺 ${storeCatch}</div>
+        <div class="store-name">${store.name}</div>
+        <div class="store-info-badge">ジャンル: ${store.genre.name} | 予算: ${store.budget.average || '不明'}</div>
+        <div class="store-detail">📍 ${store.address}</div>
+        <div class="store-detail">🕒 営業時間: ${store.open || '直接ご確認ください'}</div>
+      `;
+
+      document.getElementById('mapLinkArea').innerHTML = `<a href="${mapUrl}" target="_blank" class="map-btn">📍 Googleマップで案内スタート</a>`;
+      document.getElementById('lineShareArea').innerHTML = `<a href="${lineUrl}" target="_blank" class="line-btn">📲 LINEでグループに共有</a>`;
+
+      document.getElementById('resultStoreCard').style.display = 'block';
+      document.getElementById('actionArea').style.display = 'flex';
+
+      initCandidatesAccordion();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 2200);
+  }
+
+  function initCandidatesAccordion() {
+    const section = document.getElementById('candidatesSection');
+    const list = document.getElementById('candidatesList');
+    displayedCandidateCount = 0;
+    list.innerHTML = '';
+
+    if (allCandidateStores.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+    document.getElementById('candidateCount').innerText = `(全${allCandidateStores.length}件)`;
+    renderNextCandidatesChunk();
+  }
+
+  function renderNextCandidatesChunk() {
+    const list = document.getElementById('candidatesList');
+    const chunkSize = 5;
+    const nextChunk = allCandidateStores.slice(displayedCandidateCount, displayedCandidateCount + chunkSize);
+
+    nextChunk.forEach(store => {
+      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(store.name + ' ' + store.address)}`;
+      const card = document.createElement('div');
+      card.className = 'candidate-card';
+      card.innerHTML = `
+        <div class="candidate-name">${store.name}</div>
+        <div style="font-size:0.8rem; color:var(--text-sub); margin-top:2px;">${store.genre.name} | 予算: ${store.budget.average || '不明'}</div>
+        <div style="font-size:0.8rem; color:var(--text-sub); margin-top:2px;">📍 ${store.address}</div>
+        <a href="${mapUrl}" target="_blank" style="display:inline-block; margin-top:8px; font-size:0.82rem; color:#3b82f6; font-weight:bold; text-decoration:none;">マップで開く →</a>
+      `;
+      list.appendChild(card);
+    });
+
+    displayedCandidateCount += nextChunk.length;
+
+    if (nextChunk.length > 0) {
+      const adBox = document.createElement('div');
+      adBox.className = 'ad-container';
+      adBox.innerHTML = `
+        <div style="font-weight:bold; margin-bottom:2px;">スポンサーリンク</div>
+        <div style="font-size:0.7rem; color:#9ca3af;">[ 候補リスト広告枠 ]</div>
+      `;
+      list.appendChild(adBox);
+    }
+
+    const moreBtn = document.getElementById('moreCandidatesBtn');
+    if (displayedCandidateCount >= allCandidateStores.length) {
+      moreBtn.style.display = 'none';
+    } else {
+      moreBtn.style.display = 'block';
+      moreBtn.innerText = `さらに5件表示（残り ${allCandidateStores.length - displayedCandidateCount} 件）`;
+    }
+  }
+</script>
+</body>
+</html>
