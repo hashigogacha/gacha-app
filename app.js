@@ -1,0 +1,166 @@
+let currentResults = [];
+let historyIds = [];
+let isRolling = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const gachaForm = document.getElementById('gacha-form');
+  if (gachaForm) {
+    gachaForm.addEventListener('submit', handleGachaSubmit);
+  }
+});
+
+async function handleGachaSubmit(e) {
+  if (e) e.preventDefault();
+  if (isRolling) return;
+
+  const station = document.getElementById('station-input').value.trim();
+  const genre = document.getElementById('genre-select').value;
+  const budget = document.getElementById('budget-select').value;
+
+  if (!station) {
+    alert('駅名を入力してください');
+    return;
+  }
+
+  showSlotView();
+  isRolling = true;
+
+  try {
+    const response = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        station,
+        genre,
+        budget,
+        excludeIds: historyIds
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success || !data.results || data.results.length === 0) {
+      throw new Error(data.message || '該当するお店が見つかりませんでした');
+    }
+
+    currentResults = data.results;
+
+    // ドラムロール演出 (約2秒)
+    await startSlotAnimation();
+
+    // 結果の表示
+    showResultView(currentResults);
+
+  } catch (err) {
+    alert(err.message || 'エラーが発生しました。もう一度お試しください。');
+    showInputView();
+  } finally {
+    isRolling = false;
+  }
+}
+
+function startSlotAnimation() {
+  return new Promise((resolve) => {
+    const slotText = document.getElementById('slot-text');
+    const dummyNames = ['居酒屋 焼き鳥館', '個室ダイニング 宴', 'バル 恵比寿', '海鮮酒場 まぐろ', '串カツ 黄金', '個室居酒屋 桜'];
+    let count = 0;
+
+    const interval = setInterval(() => {
+      const randomIndex = Math.floor(Math.random() * dummyNames.length);
+      if (slotText) slotText.textContent = dummyNames[randomIndex];
+      count++;
+
+      if (count > 25) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 80);
+  });
+}
+
+function showSlotView() {
+  document.getElementById('input-card')?.classList.add('hidden');
+  document.getElementById('result-card')?.classList.add('hidden');
+  document.getElementById('slot-card')?.classList.remove('hidden');
+}
+
+function showInputView() {
+  document.getElementById('slot-card')?.classList.add('hidden');
+  document.getElementById('result-card')?.classList.add('hidden');
+  document.getElementById('input-card')?.classList.remove('hidden');
+}
+
+function showResultView(results) {
+  const winner = results[0];
+  historyIds.push(winner.id);
+
+  // UI反映
+  setText('res-genre', winner.genre || '居酒屋');
+  setText('res-name', winner.name || '店舗名');
+  setText('res-catch', winner.catch || '');
+
+  const imgEl = document.getElementById('res-img');
+  if (imgEl) {
+    imgEl.src = winner.photo || 'https://via.placeholder.com/400x250?text=No+Image';
+    imgEl.alt = winner.name;
+  }
+
+  setText('res-access', winner.access || '情報なし');
+  setText('res-budget', winner.budget || '情報なし');
+  setText('res-hours', winner.open || '情報なし');
+
+  // リンク設定
+  const hpBtn = document.getElementById('res-hp-link');
+  if (hpBtn) {
+    hpBtn.href = winner.urls?.pc || '#';
+  }
+
+  const mapBtn = document.getElementById('res-map-link');
+  if (mapBtn) {
+    const query = encodeURIComponent(`${winner.name} ${winner.address || ''}`);
+    mapBtn.href = `https://www.google.com/maps/search/?api=1&query=${query}`;
+  }
+
+  // SNSシェア設定
+  const shareText = encodeURIComponent(`【はしご酒ガチャ】で引いたお店はこちら！\n『${winner.name}』\n#はしご酒ガチャ`);
+  const shareUrl = encodeURIComponent(window.location.href);
+
+  const xBtn = document.getElementById('share-x');
+  if (xBtn) xBtn.href = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
+
+  const lineBtn = document.getElementById('share-line');
+  if (lineBtn) lineBtn.href = `https://social-plugins.line.me/lineit/share?url=${shareUrl}`;
+
+  // サブ候補リスト（他2件）
+  const candidateList = document.getElementById('candidate-list');
+  if (candidateList) {
+    candidateList.innerHTML = '';
+    const subList = results.slice(1, 3);
+    if (subList.length > 0) {
+      subList.forEach((shop) => {
+        const li = document.createElement('li');
+        li.textContent = `🍺 ${shop.name} （${shop.genre || ''}）`;
+        candidateList.appendChild(li);
+      });
+      document.getElementById('sub-candidates')?.classList.remove('hidden');
+    } else {
+      document.getElementById('sub-candidates')?.classList.add('hidden');
+    }
+  }
+
+  document.getElementById('slot-card')?.classList.add('hidden');
+  document.getElementById('result-card')?.classList.remove('hidden');
+}
+
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function retryGacha() {
+  handleGachaSubmit(null);
+}
+
+function resetGacha() {
+  showInputView();
+}
