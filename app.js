@@ -1,24 +1,57 @@
 let currentResults = [];
 let historyIds = [];
 let isRolling = false;
+let userCoords = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const gachaForm = document.getElementById('gacha-form');
   if (gachaForm) {
     gachaForm.addEventListener('submit', handleGachaSubmit);
   }
+
+  const geoBtn = document.getElementById('geo-btn');
+  if (geoBtn) {
+    geoBtn.addEventListener('click', getLocation);
+  }
 });
+
+function getLocation() {
+  const statusEl = document.getElementById('geo-status');
+  if (!navigator.geolocation) {
+    if (statusEl) statusEl.textContent = 'お使いのブラウザは現在地取得に対応していません';
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = '現在地を取得中...';
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      userCoords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+      const stationInput = document.getElementById('station-input');
+      if (stationInput) stationInput.value = '現在地周辺';
+      if (statusEl) statusEl.textContent = '📍 現在地を取得しました！';
+    },
+    (error) => {
+      if (statusEl) statusEl.textContent = '現在地の取得に失敗しました。駅名を入力してください。';
+      userCoords = null;
+    }
+  );
+}
 
 async function handleGachaSubmit(e) {
   if (e) e.preventDefault();
   if (isRolling) return;
 
-  const station = document.getElementById('station-input').value.trim();
+  const stationInput = document.getElementById('station-input');
+  const station = stationInput ? stationInput.value.trim() : '';
   const genre = document.getElementById('genre-select').value;
   const budget = document.getElementById('budget-select').value;
 
-  if (!station) {
-    alert('駅名を入力してください');
+  if (!station && !userCoords) {
+    alert('駅名を入力するか、現在地を取得してください');
     return;
   }
 
@@ -26,15 +59,23 @@ async function handleGachaSubmit(e) {
   isRolling = true;
 
   try {
+    const payload = {
+      genre,
+      budget,
+      excludeIds: historyIds
+    };
+
+    if (station === '現在地周辺' && userCoords) {
+      payload.lat = userCoords.lat;
+      payload.lng = userCoords.lng;
+    } else {
+      payload.station = station;
+    }
+
     const response = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        station,
-        genre,
-        budget,
-        excludeIds: historyIds
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await response.json();
@@ -45,10 +86,7 @@ async function handleGachaSubmit(e) {
 
     currentResults = data.results;
 
-    // ドラムロール演出 (約2秒)
     await startSlotAnimation();
-
-    // 結果の表示
     showResultView(currentResults);
 
   } catch (err) {
@@ -94,7 +132,6 @@ function showResultView(results) {
   const winner = results[0];
   historyIds.push(winner.id);
 
-  // UI反映
   setText('res-genre', winner.genre || '居酒屋');
   setText('res-name', winner.name || '店舗名');
   setText('res-catch', winner.catch || '');
@@ -109,11 +146,8 @@ function showResultView(results) {
   setText('res-budget', winner.budget || '情報なし');
   setText('res-hours', winner.open || '情報なし');
 
-  // リンク設定
   const hpBtn = document.getElementById('res-hp-link');
-  if (hpBtn) {
-    hpBtn.href = winner.urls?.pc || '#';
-  }
+  if (hpBtn) hpBtn.href = winner.urls?.pc || '#';
 
   const mapBtn = document.getElementById('res-map-link');
   if (mapBtn) {
@@ -121,8 +155,7 @@ function showResultView(results) {
     mapBtn.href = `https://www.google.com/maps/search/?api=1&query=${query}`;
   }
 
-  // SNSシェア設定
-  const shareText = encodeURIComponent(`【はしご酒ガチャ】で引いたお店はこちら！\n『${winner.name}』\n#はしご酒ガチャ`);
+  const shareText = encodeURIComponent(`【ハシゴ酒ガチャ】で引いたお店はこちら！\n『${winner.name}』\n#ハシゴ酒ガチャ`);
   const shareUrl = encodeURIComponent(window.location.href);
 
   const xBtn = document.getElementById('share-x');
@@ -131,7 +164,6 @@ function showResultView(results) {
   const lineBtn = document.getElementById('share-line');
   if (lineBtn) lineBtn.href = `https://social-plugins.line.me/lineit/share?url=${shareUrl}`;
 
-  // サブ候補リスト（他2件）
   const candidateList = document.getElementById('candidate-list');
   if (candidateList) {
     candidateList.innerHTML = '';
