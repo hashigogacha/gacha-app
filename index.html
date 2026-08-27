@@ -17,8 +17,17 @@
     <div id="input-card" class="card">
       <form id="gacha-form">
         <div class="form-group">
-          <label for="station-input">エリア・駅名指定</label>
-          <input type="text" id="station-input" placeholder="例：新宿駅、渋谷、有楽町" />
+          <label for="step-select">何軒目ですか？</label>
+          <select id="step-select">
+            <option value="1">1軒目（しっかり食事・居酒屋）</option>
+            <option value="2" selected>2軒目（サクッと飲める・バル）</option>
+            <option value="3">3軒目以降（バー・遅くまで営業）</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="station-input">エリア指定（駅名・住所など）</label>
+          <input type="text" id="station-input" placeholder="例：新宿駅、東京都新宿区西新宿" />
           <button type="button" id="geo-btn" class="btn-location">📍 現在地を使用する</button>
           <p id="geo-status" class="geo-status-text"></p>
         </div>
@@ -30,7 +39,11 @@
             <option value="G001">居酒屋</option>
             <option value="G002">ダイニングバー・バル</option>
             <option value="G012">バー・カクテル</option>
+            <option value="G004">和食</option>
+            <option value="G003">洋食・イタリアン</option>
             <option value="G008">焼肉・ホルモン</option>
+            <option value="G016">中華</option>
+            <option value="G017">韓国料理</option>
           </select>
         </div>
 
@@ -38,10 +51,26 @@
           <label for="budget-select">予算目安</label>
           <select id="budget-select">
             <option value="">指定なし</option>
-            <option value="B001">1,501〜2,000円</option>
-            <option value="B002">2,001〜3,000円</option>
-            <option value="B003">3,001〜4,000円</option>
+            <option value="B001">〜2,000円</option>
+            <option value="B002">〜3,000円</option>
+            <option value="B003">〜4,000円</option>
+            <option value="B008">〜5,000円</option>
+            <option value="B004">5,001円〜</option>
           </select>
+        </div>
+
+        <div class="form-group">
+          <label for="smoking-select">禁煙・喫煙</label>
+          <select id="smoking-select">
+            <option value="">指定なし</option>
+            <option value="0">禁煙席あり</option>
+            <option value="1">喫煙席あり（喫煙可）</option>
+          </select>
+        </div>
+
+        <!-- 広告枠①：ガチャを回すボタンのすぐ上または下 -->
+        <div class="ad-box ad-slot">
+          <p>【スポンサーリンク（広告枠）】</p>
         </div>
 
         <button type="submit" class="btn-primary">🎰 ガチャを回す！</button>
@@ -79,20 +108,21 @@
         <a id="res-map-link" href="#" target="_blank" class="btn-link map-btn">🗺️ Googleマップでルート案内</a>
       </div>
 
-      <div id="sub-candidates" class="sub-candidates-box hidden">
-        <h3>🍺 他の候補店舗</h3>
-        <ul id="candidate-list"></ul>
-      </div>
-
-      <div class="share-box">
-        <p>結果をみんなに共有</p>
-        <a id="share-x" href="#" target="_blank" class="btn-share x-btn">Xで投稿</a>
-        <a id="share-line" href="#" target="_blank" class="btn-share line-btn">LINEで送る</a>
-      </div>
-
       <div class="action-group">
         <button type="button" onclick="retryGacha()" class="btn-secondary">もう一度ガチャを回す 🔄</button>
         <button type="button" onclick="resetGacha()" class="btn-outline">条件を変更する ⚙️</button>
+      </div>
+
+      <!-- 広告枠②：再ガチャボタンとサブ候補の間 -->
+      <div class="ad-box ad-slot">
+        <p>【スポンサーリンク（広告枠）】</p>
+      </div>
+
+      <!-- サブ候補エリア（最大20件を5件ずつ展開） -->
+      <div id="sub-candidates" class="sub-candidates-box hidden">
+        <h3>🍺 他の候補店舗（もっと見る）</h3>
+        <div id="candidate-list-container"></div>
+        <button type="button" id="load-more-btn" onclick="loadMoreCandidates()" class="btn-load-more">さらに5件表示する 👇</button>
       </div>
     </div>
 
