@@ -21,18 +21,17 @@ export default async function handler(req, res) {
       params.append('lat', lat);
       params.append('lng', lng);
       
-      // 距離指定（range）のマッピング
       if (range) {
         const rangeNum = parseInt(range, 10);
         let apiRange = '3';
-        if (rangeNum <= 300) apiRange = '1';       // 300m
-        else if (rangeNum <= 500) apiRange = '2';  // 500m
-        else if (rangeNum <= 1000) apiRange = '3'; // 1000m
-        else if (rangeNum <= 2000) apiRange = '4'; // 2000m
-        else apiRange = '5';                      // 3000m
+        if (rangeNum <= 300) apiRange = '1';
+        else if (rangeNum <= 500) apiRange = '2';
+        else if (rangeNum <= 1000) apiRange = '3';
+        else if (rangeNum <= 2000) apiRange = '4';
+        else apiRange = '5';
         params.append('range', apiRange);
       } else {
-        params.append('range', '5'); // 制限なしの場合最大値
+        params.append('range', '5');
       }
     } else if (station) {
       params.append('keyword', station);
@@ -53,7 +52,24 @@ export default async function handler(req, res) {
       return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした' });
     }
 
-    // 「今営業中のみ」の簡易フィルター（営業時間表記に基づく判定）
+    // 1. 距離（徒歩分数）による手動フィルター
+    if (range) {
+      const rangeNum = parseInt(range, 10);
+      // 80m＝徒歩1分計算 ＋ 余裕分（2分）
+      const maxWalkMinutes = Math.ceil(rangeNum / 80) + 2;
+
+      shops = shops.filter(shop => {
+        const accessText = (shop.access || '') + ' ' + (shop.mobile_access || '');
+        const match = accessText.match(/徒歩\s*(\d+)\s*分/);
+        if (match) {
+          const walkMin = parseInt(match[1], 10);
+          return walkMin <= maxWalkMinutes;
+        }
+        return true; // 徒歩数が取得できない場合は残す
+      });
+    }
+
+    // 2. 「今営業中のみ」のフィルター
     if (openNow) {
       shops = shops.filter(shop => {
         if (!shop.open) return true;
@@ -61,10 +77,16 @@ export default async function handler(req, res) {
       });
     }
 
+    // 3. 何軒目かに合わせた優先抽出
     let filteredShops = shops;
     if (step === '3') {
-      const barShops = shops.filter(s => s.genre?.name?.includes('バー') || s.genre?.name?.includes('カクテル'));
-      if (barShops.length >= 3) filteredShops = barShops;
+      // 3軒目〜（シメ）：ラーメン店・バー・カクテルを優先
+      const shimeShops = shops.filter(s => {
+        const gName = s.genre?.name || '';
+        const name = s.name || '';
+        return gName.includes('ラーメン') || gName.includes('バー') || gName.includes('カクテル') || name.includes('ラーメン') || name.includes('つけ麺');
+      });
+      if (shimeShops.length >= 2) filteredShops = shimeShops;
     }
 
     let availableShops = filteredShops.filter(shop => !excludeIds.includes(shop.id));
