@@ -55,7 +55,6 @@ export default async function handler(req, res) {
     // 1. 距離（徒歩分数）による手動フィルター
     if (range) {
       const rangeNum = parseInt(range, 10);
-      // 80m＝徒歩1分計算 ＋ 余裕分（2分）
       const maxWalkMinutes = Math.ceil(rangeNum / 80) + 2;
 
       shops = shops.filter(shop => {
@@ -65,12 +64,13 @@ export default async function handler(req, res) {
           const walkMin = parseInt(match[1], 10);
           return walkMin <= maxWalkMinutes;
         }
-        return true; // 徒歩数が取得できない場合は残す
+        return true;
       });
     }
 
-    // 2. 「今営業中のみ」のフィルター
-    if (openNow) {
+    // 2. 「今営業中のみ」のフィルター（真偽値判定を厳密化）
+    const isNowOpenChecked = openNow === true || openNow === 'true';
+    if (isNowOpenChecked) {
       shops = shops.filter(shop => {
         if (!shop.open) return true;
         return !shop.open.includes('定休日') || shop.open.length > 5;
@@ -80,7 +80,6 @@ export default async function handler(req, res) {
     // 3. 何軒目かに合わせた優先抽出
     let filteredShops = shops;
     if (step === '3') {
-      // 3軒目〜（シメ）：ラーメン店・バー・カクテルを優先
       const shimeShops = shops.filter(s => {
         const gName = s.genre?.name || '';
         const name = s.name || '';
