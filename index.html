@@ -3,117 +3,105 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ハシゴ酒ガチャ | 2軒目・3軒目の居酒屋を1タップで即決定</title>
+  <title>ハシゴ酒ガチャ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>🍻 ハシゴ酒ガチャ</h1>
-    <p>今夜の2軒目・3軒目を1タップで運まかせ決定！</p>
-  </header>
+  <div id="app">
+    <header>
+      <h1>🍺 ハシゴ酒ガチャ</h1>
+      <p>今夜の2軒目・3軒目を1タップで運まかせ決定！</p>
+    </header>
 
-  <main id="app">
-    <!-- 入力・設定画面 -->
-    <section id="search-section" class="card">
+    <!-- 条件入力画面 -->
+    <div id="input-card" class="card">
       <form id="gacha-form">
         <div class="form-group">
-          <label for="location-type">エリア指定</label>
-          <select id="location-type">
-            <option value="gps">現在地から探す</option>
-            <option value="station">主要駅名から探す</option>
-          </select>
-        </div>
-
-        <div class="form-group" id="station-input-group" style="display: none;">
-          <input type="text" id="station-name" placeholder="例：新宿、渋谷、梅田">
+          <label for="station-input">エリア・駅名指定</label>
+          <input type="text" id="station-input" placeholder="例：新宿駅、渋谷、有楽町" />
+          <button type="button" id="geo-btn" class="btn-location">📍 現在地を使用する</button>
+          <p id="geo-status" class="geo-status-text"></p>
         </div>
 
         <div class="form-group">
-          <label for="budget">予算目安</label>
-          <select id="budget">
+          <label for="genre-select">ジャンル</label>
+          <select id="genre-select">
+            <option value="">指定なし（すべて）</option>
+            <option value="G001">居酒屋</option>
+            <option value="G002">ダイニングバー・バル</option>
+            <option value="G012">バー・カクテル</option>
+            <option value="G008">焼肉・ホルモン</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="budget-select">予算目安</label>
+          <select id="budget-select">
             <option value="">指定なし</option>
-            <option value="B001">〜2,000円（サク飲み・安酒場）</option>
-            <option value="B002">2,001〜3,000円（標準）</option>
-            <option value="B003">3,001〜4,000円（しっかり飲み）</option>
+            <option value="B001">1,501〜2,000円</option>
+            <option value="B002">2,001〜3,000円</option>
+            <option value="B003">3,001〜4,000円</option>
           </select>
         </div>
 
-        <div class="form-group">
-          <label for="range">検索距離</label>
-          <select id="range">
-            <option value="1">300m以内（徒歩4分）</option>
-            <option value="2" selected>500m以内（徒歩6分）</option>
-            <option value="3">1,000m以内（徒歩12分）</option>
-          </select>
-        </div>
-
-        <button type="submit" id="btn-spin" class="btn-primary">🎰 ガチャを回す！</button>
+        <button type="submit" class="btn-primary">🎰 ガチャを回す！</button>
       </form>
-    </section>
+    </div>
 
-    <!-- ガチャ演出（ドラムロール画面） -->
-    <section id="slot-section" class="card hidden">
+    <!-- スロット演出画面 -->
+    <div id="slot-card" class="card hidden">
       <div class="slot-container">
-        <div id="slot-display" class="slot-text">お店を探中...</div>
+        <p>お店を選定中...</p>
+        <div id="slot-text" class="slot-text">🎰 ??? 🎰</div>
       </div>
-    </section>
+    </div>
 
     <!-- 結果表示画面 -->
-    <section id="result-section" class="card hidden">
-      <div class="badge">今夜のハシゴ酒スポット</div>
+    <div id="result-card" class="card hidden">
+      <span class="badge" id="res-genre">居酒屋</span>
       <h2 id="res-name">店舗名</h2>
-      <p id="res-catch" class="catch-text">お店の特長</p>
-      
+      <p class="catch-text" id="res-catch"></p>
+
       <div class="img-container">
-        <img id="res-photo" src="" alt="店舗写真">
+        <img id="res-img" src="" alt="店舗画像" />
       </div>
 
       <div class="info-list">
-        <p><strong>ジャンル：</strong><span id="res-genre"></span></p>
-        <p><strong>場所・アクセス：</strong><span id="res-access"></span></p>
-        <p><strong>予算目安：</strong><span id="res-budget"></span></p>
-        <p class="hours-box"><strong>⏰ 営業時間：</strong><br><span id="res-open"></span></p>
+        <p>📍 <strong>アクセス:</strong> <span id="res-access"></span></p>
+        <p>💰 <strong>予算:</strong> <span id="res-budget"></span></p>
+        <div class="hours-box">
+          <p>🕒 <strong>営業時間:</strong> <span id="res-hours"></span></p>
+        </div>
       </div>
 
-      <!-- 外部連携ボタン -->
       <div class="btn-group">
-        <a id="link-hotpepper" href="#" target="_blank" rel="noopener" class="btn-link hp-btn">🔥 ホットペッパーで詳細・予約</a>
-        <a id="link-googlemap" href="#" target="_blank" rel="noopener" class="btn-link map-btn">🗺️ Googleマップで場所を見る</a>
+        <a id="res-hp-link" href="#" target="_blank" class="btn-link hp-btn">🔥 ホットペッパーで詳細・予約</a>
+        <a id="res-map-link" href="#" target="_blank" class="btn-link map-btn">🗺️ Googleマップでルート案内</a>
       </div>
 
-      <!-- SNSシェアボタン -->
-      <div class="share-box">
-        <p>結果をシェアする</p>
-        <button id="btn-share-x" class="btn-share x-btn">𝕏 で投稿</button>
-        <button id="btn-share-line" class="btn-share line-btn">LINEで送る</button>
-      </div>
-
-      <!-- 操作ボタン -->
-      <div class="action-group">
-        <button id="btn-respin" class="btn-secondary">🔄 もう一度回す</button>
-        <button id="btn-reset" class="btn-outline">⚙️ 条件を変えて探す</button>
-      </div>
-
-      <!-- 他の候補一覧（5件） -->
-      <div id="sub-candidates" class="sub-candidates-box">
-        <h3>🍶 他の候補店舗（5選）</h3>
+      <div id="sub-candidates" class="sub-candidates-box hidden">
+        <h3>🍺 他の候補店舗</h3>
         <ul id="candidate-list"></ul>
       </div>
-    </section>
 
-    <!-- SEO対策テキストコンテンツ -->
-    <article class="seo-content">
+      <div class="share-box">
+        <p>結果をみんなに共有</p>
+        <a id="share-x" href="#" target="_blank" class="btn-share x-btn">Xで投稿</a>
+        <a id="share-line" href="#" target="_blank" class="btn-share line-btn">LINEで送る</a>
+      </div>
+
+      <div class="action-group">
+        <button type="button" onclick="retryGacha()" class="btn-secondary">もう一度ガチャを回す 🔄</button>
+        <button type="button" onclick="resetGacha()" class="btn-outline">条件を変更する ⚙️</button>
+      </div>
+    </div>
+
+    <!-- SEO文章 -->
+    <div class="seo-content">
       <h2>「ハシゴ酒ガチャ」で今夜の飲み屋巡りをスマートに</h2>
-      <p>「2軒目はどこに行こう？」「近くで今すぐ入れる居酒屋が見つからない」そんなハシゴ酒の悩みは「ハシゴ酒ガチャ」が解決します。現在地や主要駅から徒歩圏内の居酒屋・バーをランダムで瞬時に検索。ホットペッパーグルメの最新データを元に、リアルタイムで営業している店舗を提案します。</p>
-      <h3>こんなシーンにおすすめ</h3>
-      <ul>
-        <li>終電までのあと1時間、もう1軒サクッと飲みたいとき</li>
-        <li>いつものチェーン店ではなく、隠れた名店を開拓したいとき</li>
-        <li>グループでの飲み会で、次の店が決まらず迷ったとき</li>
-      </ul>
-      <p>完全無料で会員登録も不要。1タップで運命のハシゴ酒スポットを見つけて、今夜の夜飲みを最高に盛り上げましょう！</p>
-    </article>
-  </main>
+      <p>「2軒目はどこに行こう？」「近くで今すぐ入れる居酒屋が見つからない」そんなハシゴ酒の悩みは「ハシゴ酒ガチャ」が解決します。</p>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
