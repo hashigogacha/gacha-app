@@ -39,7 +39,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'エリア情報を指定してください' });
     }
 
-    if (genre) params.append('genre', genre);
+    // ジャンル指定がない場合は、主要な夜間・飲み屋ジャンルを自動でまとめて検索対象にする
+    if (genre) {
+      params.append('genre', genre);
+    } else {
+      // G001:居酒屋, G002:ダイニングバー, G012:バー, G013:ラーメン, G016:中華
+      params.append('genre', 'G001,G002,G012,G013,G016');
+    }
+
     if (budget) params.append('budget', budget);
     if (smoking !== undefined && smoking !== '') params.append('non_smoking', smoking);
 
