@@ -3,11 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { station, genre, budget, excludeIds = [] } = req.body || {};
-
-  if (!station) {
-    return res.status(400).json({ message: '駅名を入力してください' });
-  }
+  const { station, lat, lng, genre, budget, excludeIds = [] } = req.body || {};
 
   const apiKey = process.env.HOTPEPPER_API_KEY;
   if (!apiKey) {
@@ -17,10 +13,19 @@ export default async function handler(req, res) {
   try {
     const params = new URLSearchParams({
       key: apiKey,
-      keyword: station,
       format: 'json',
       count: '50'
     });
+
+    if (lat && lng) {
+      params.append('lat', lat);
+      params.append('lng', lng);
+      params.append('range', '3'); // 約1000m圏内
+    } else if (station) {
+      params.append('keyword', station);
+    } else {
+      return res.status(400).json({ message: '駅名または位置情報を指定してください' });
+    }
 
     if (genre) params.append('genre', genre);
     if (budget) params.append('budget', budget);
@@ -34,18 +39,13 @@ export default async function handler(req, res) {
       return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした' });
     }
 
-    // 既に引いた店を除外（重複防止）
     let availableShops = shops.filter(shop => !excludeIds.includes(shop.id));
-
-    // 全て引いた場合は全件から再選択
     if (availableShops.length === 0) {
       availableShops = shops;
     }
 
-    // シャッフル
     const shuffled = availableShops.sort(() => 0.5 - Math.random());
 
-    // 当選結果＋サブ候補2件のデータを整理
     const results = shuffled.slice(0, 3).map(shop => ({
       id: shop.id,
       name: shop.name,
