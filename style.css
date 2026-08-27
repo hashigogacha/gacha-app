@@ -351,3 +351,49 @@ input[type="text"], select {
   font-size: 0.85rem;
   margin-top: 8px;
 }
+/* 何軒目かボタンの横並びスタイル */
+.step-btn-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.btn-step {
+  flex: 1;
+  padding: 10px 0;
+  background: #f3f4f6;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-step.active {
+  background: #ff6b6b;
+  color: #ffffff;
+  border-color: #ff6b6b;
+}
+
+/* チェックボックスのスタイル */
+.checkbox-group {
+  margin: 14px 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ff6b6b;
+  cursor: pointer;
+}
