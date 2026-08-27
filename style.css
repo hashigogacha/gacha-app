@@ -1,0 +1,266 @@
+/* 全体デザイン設定 */
+:root {
+  --primary: #ff5252;
+  --secondary: #3b82f6;
+  --accent: #f59e0b;
+  --bg-color: #f7f9fa;
+  --card-bg: #ffffff;
+  --text: #1f2937;
+  --sub-text: #6b7280;
+  --border: #e5e7eb;
+  --line: #06c755;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text);
+  margin: 0;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+#app {
+  width: 100%;
+  max-width: 480px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--primary);
+}
+
+header p {
+  font-size: 0.85rem;
+  color: var(--sub-text);
+  margin-top: 4px;
+}
+
+/* カード＆非表示切替 */
+.card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* 入力フォーム */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+input[type="text"], select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+/* ボタン各種 */
+.btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* ドラムロール演出 */
+.slot-container {
+  text-align: center;
+  padding: 40px 10px;
+}
+
+.slot-text {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--primary);
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 結果表示画面 */
+.badge {
+  display: inline-block;
+  background: #fff7ed;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+#res-name {
+  font-size: 1.4rem;
+  margin: 0 0 6px 0;
+  color: var(--text);
+}
+
+.catch-text {
+  font-size: 0.85rem;
+  color: var(--sub-text);
+  font-weight: bold;
+  margin-bottom: 14px;
+}
+
+.img-container img {
+  width: 100%;
+  border-radius: 12px;
+  max-height: 200px;
+  object-fit: cover;
+  margin-bottom: 14px;
+}
+
+.info-list p {
+  font-size: 0.85rem;
+  margin: 6px 0;
+  line-height: 1.4;
+}
+
+.hours-box {
+  background: #fdf2f2;
+  border: 1px solid #fecaca;
+  padding: 10px;
+  border-radius: 8px;
+  color: #991b1b;
+  margin-top: 10px;
+}
+
+/* 外部連携・アクションボタン */
+.btn-group, .action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn-link {
+  display: block;
+  text-align: center;
+  padding: 14px;
+  border-radius: 10px;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.hp-btn { background: var(--primary); color: white; }
+.map-btn { background: var(--secondary); color: white; }
+
+.share-box {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.share-box p {
+  font-size: 0.8rem;
+  color: var(--sub-text);
+  margin-bottom: 8px;
+}
+
+.btn-share {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 0 4px;
+}
+
+.x-btn { background: #000000; color: white; }
+.line-btn { background: var(--line); color: white; }
+
+.btn-secondary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-outline {
+  background: #e5e7eb;
+  color: var(--text);
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* 他の候補リスト */
+.sub-candidates-box {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.sub-candidates-box h3 {
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+}
+
+#candidate-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#candidate-list li {
+  background: #f9fafb;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+
+/* SEO・文章枠 */
+.seo-content {
+  margin-top: 30px;
+  font-size: 0.82rem;
+  color: var(--sub-text);
+  line-height: 1.6;
+}
+
+.seo-content h2, .seo-content h3 {
+  color: var(--text);
+}
