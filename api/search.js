@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { station, lat, lng, step, genre, budget, smoking, excludeIds = [] } = req.body || {};
+  const { station, lat, lng, step, range, genre, budget, smoking, openNow, excludeIds = [] } = req.body || {};
 
   const apiKey = process.env.HOTPEPPER_API_KEY;
   if (!apiKey) {
@@ -14,13 +14,26 @@ export default async function handler(req, res) {
     const params = new URLSearchParams({
       key: apiKey,
       format: 'json',
-      count: '100' // 最大100件取得してサブ候補（最大20件＋当選1件）を確保
+      count: '100'
     });
 
     if (lat && lng) {
       params.append('lat', lat);
       params.append('lng', lng);
-      params.append('range', '3'); // 約1000m圏内
+      
+      // 距離指定（range）のマッピング
+      if (range) {
+        const rangeNum = parseInt(range, 10);
+        let apiRange = '3';
+        if (rangeNum <= 300) apiRange = '1';       // 300m
+        else if (rangeNum <= 500) apiRange = '2';  // 500m
+        else if (rangeNum <= 1000) apiRange = '3'; // 1000m
+        else if (rangeNum <= 2000) apiRange = '4'; // 2000m
+        else apiRange = '5';                      // 3000m
+        params.append('range', apiRange);
+      } else {
+        params.append('range', '5'); // 制限なしの場合最大値
+      }
     } else if (station) {
       params.append('keyword', station);
     } else {
@@ -34,20 +47,24 @@ export default async function handler(req, res) {
     const response = await fetch(`https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${params.toString()}`);
     const data = await response.json();
 
-    const shops = data.results?.shop || [];
+    let shops = data.results?.shop || [];
 
     if (shops.length === 0) {
       return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした' });
     }
 
-    // 何軒目かに合わせた絞り込み・優先度調整
+    // 「今営業中のみ」の簡易フィルター（営業時間表記に基づく判定）
+    if (openNow) {
+      shops = shops.filter(shop => {
+        if (!shop.open) return true;
+        return !shop.open.includes('定休日') || shop.open.length > 5;
+      });
+    }
+
     let filteredShops = shops;
-    if (step === '2') {
-      // 2軒目：バル・バー・居酒屋などを優遇（またはそのままシャッフル）
-    } else if (step === '3') {
-      // 3軒目以降：バーや深夜営業を優先、なければそのまま
+    if (step === '3') {
       const barShops = shops.filter(s => s.genre?.name?.includes('バー') || s.genre?.name?.includes('カクテル'));
-      if (barShops.length >= 5) filteredShops = barShops;
+      if (barShops.length >= 3) filteredShops = barShops;
     }
 
     let availableShops = filteredShops.filter(shop => !excludeIds.includes(shop.id));
@@ -55,10 +72,8 @@ export default async function handler(req, res) {
       availableShops = shops;
     }
 
-    // シャッフル
     const shuffled = availableShops.sort(() => 0.5 - Math.random());
 
-    // 当選＋サブ候補用に最大21件を整形
     const results = shuffled.slice(0, 21).map(shop => ({
       id: shop.id,
       name: shop.name,
