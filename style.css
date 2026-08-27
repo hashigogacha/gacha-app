@@ -1,4 +1,86 @@
-/* 何軒目かボタンのスタイル調整 */
+:root {
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --primary: #ff6b6b;
+  --primary-hover: #ff5252;
+  --text: #1e293b;
+  --sub-text: #64748b;
+  --border: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  padding: 20px 12px;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 1.6rem;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+header p {
+  font-size: 0.85rem;
+  color: var(--sub-text);
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+/* 画面切り替え用の非表示クラス */
+.hidden {
+  display: none !important;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: #fff;
+  color: var(--text);
+  outline: none;
+}
+
+/* 何軒目かボタンの横並び */
 .step-btn-group {
   display: flex;
   gap: 8px;
@@ -27,16 +109,35 @@
 }
 
 .btn-step.active {
-  background: #ff6b6b;
+  background: var(--primary);
   color: #ffffff;
-  border-color: #ff6b6b;
+  border-color: var(--primary);
 }
 
 .btn-step.active small {
   opacity: 1;
 }
 
-/* チェックボックスのスタイル */
+.btn-location {
+  width: 100%;
+  margin-top: 8px;
+  background: #f3f4f6;
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.geo-status-text {
+  font-size: 0.75rem;
+  color: var(--sub-text);
+  margin-top: 4px;
+}
+
+/* チェックボックス */
 .checkbox-group {
   margin: 14px 0;
 }
@@ -53,6 +154,211 @@
 .checkbox-label input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #ff6b6b;
+  accent-color: var(--primary);
   cursor: pointer;
+}
+
+/* ボタン各種 */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.btn-outline {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  color: var(--sub-text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* スロット表示 */
+.slot-container {
+  text-align: center;
+  padding: 30px 10px;
+}
+
+.slot-text {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-top: 10px;
+  color: var(--primary);
+}
+
+/* 結果表示 */
+.badge {
+  display: inline-block;
+  background: #ffe4e6;
+  color: #e11d48;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+#res-name {
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+}
+
+.catch-text {
+  font-size: 0.85rem;
+  color: var(--sub-text);
+  margin-bottom: 12px;
+}
+
+.img-container {
+  width: 100%;
+  height: 200px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: #f1f5f9;
+}
+
+.img-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info-list {
+  font-size: 0.88rem;
+  margin-bottom: 16px;
+}
+
+.info-list p {
+  margin-bottom: 6px;
+}
+
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-link {
+  display: block;
+  text-align: center;
+  padding: 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.hp-btn {
+  background: #ff2d55;
+  color: #fff;
+}
+
+.map-btn {
+  background: #10b981;
+  color: #fff;
+}
+
+/* 広告枠 */
+.ad-box {
+  width: 100%;
+  background: #f3f4f6;
+  border: 2px dashed #cbd5e1;
+  padding: 16px;
+  text-align: center;
+  border-radius: 10px;
+  margin: 16px 0;
+}
+
+.ad-box p {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0;
+  font-weight: bold;
+}
+
+/* サブ候補 */
+.sub-candidates-box {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.sub-candidates-box h3 {
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+}
+
+.candidate-list-ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.candidate-list-ul li {
+  background: #f9fafb;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+
+.sub-genre {
+  color: var(--primary);
+  font-size: 0.75rem;
+}
+
+.btn-load-more {
+  width: 100%;
+  background: #e5e7eb;
+  color: var(--text);
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+/* SEO文章 */
+.seo-content {
+  margin-top: 30px;
+  font-size: 0.82rem;
+  color: var(--sub-text);
+  line-height: 1.6;
+}
+
+.seo-content h2, .seo-content h3 {
+  color: var(--text);
+  font-size: 1rem;
+  margin-bottom: 8px;
 }
