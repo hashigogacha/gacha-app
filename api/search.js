@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした' });
     }
 
-    // 1. 距離（徒歩分数）による手動フィルター
+    // 1. 距離（徒歩分数）によるフィルター
     if (range) {
       const rangeNum = parseInt(range, 10);
       const maxWalkMinutes = Math.ceil(rangeNum / 80) + 2;
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2. 「今営業中のみ」のフィルター（真偽値判定を厳密化）
+    // 2. 「今営業中のみ」のフィルター
     const isNowOpenChecked = openNow === true || openNow === 'true';
     if (isNowOpenChecked) {
       shops = shops.filter(shop => {
@@ -77,22 +77,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // 3. 何軒目かに合わせた優先抽出
-    let filteredShops = shops;
-    if (step === '3') {
-      const shimeShops = shops.filter(s => {
-        const gName = s.genre?.name || '';
-        const name = s.name || '';
-        return gName.includes('ラーメン') || gName.includes('バー') || gName.includes('カクテル') || name.includes('ラーメン') || name.includes('つけ麺');
-      });
-      if (shimeShops.length >= 2) filteredShops = shimeShops;
-    }
-
-    let availableShops = filteredShops.filter(shop => !excludeIds.includes(shop.id));
+    // 重複除外
+    let availableShops = shops.filter(shop => !excludeIds.includes(shop.id));
     if (availableShops.length === 0) {
       availableShops = shops;
     }
 
+    // 全条件にマッチしたお店から完全ランダム抽出
     const shuffled = availableShops.sort(() => 0.5 - Math.random());
 
     const results = shuffled.slice(0, 21).map(shop => ({
