@@ -269,3 +269,22 @@ input[type="text"], select {
 .seo-content h2, .seo-content h3 {
   color: var(--text);
 }
+
+.btn-location {
+  width: 100%;
+  margin-top: 8px;
+  background: #f3f4f6;
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.geo-status-text {
+  font-size: 0.75rem;
+  color: var(--sub-text);
+  margin-top: 4px;
+}
