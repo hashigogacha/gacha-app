@@ -19,11 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const stepBtns = document.querySelectorAll('.btn-step');
   stepBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
+      const target = e.currentTarget;
       stepBtns.forEach(b => b.classList.remove('active'));
-      e.target.classList.add('active');
+      target.classList.add('active');
       const hiddenInput = document.getElementById('step-select');
       if (hiddenInput) {
-        hiddenInput.value = e.target.getAttribute('data-value');
+        hiddenInput.value = target.getAttribute('data-value');
       }
     });
   });
@@ -214,7 +215,11 @@ function loadMoreCandidates() {
 
   nextBatch.forEach((shop) => {
     const li = document.createElement('li');
-    li.innerHTML = `<strong>${shop.name}</strong> <span class="sub-genre">(${shop.genre || ''})</span><br><small>${shop.access || ''}</small>`;
+    li.innerHTML = `
+      <strong>${shop.name}</strong> <span class="sub-genre">(${shop.genre || ''})</span><br>
+      <small>📍 ${shop.access || 'アクセス情報なし'}</small><br>
+      <small>🕒 <strong>営業時間:</strong> ${shop.open || '情報なし'}</small>
+    `;
     ul.appendChild(li);
   });
 
