@@ -14,6 +14,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (geoBtn) {
     geoBtn.addEventListener('click', getLocation);
   }
+
+  // 何軒目かボタンの切替処理
+  const stepBtns = document.querySelectorAll('.btn-step');
+  stepBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      stepBtns.forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      const hiddenInput = document.getElementById('step-select');
+      if (hiddenInput) {
+        hiddenInput.value = e.target.getAttribute('data-value');
+      }
+    });
+  });
 });
 
 function getLocation() {
@@ -49,9 +62,11 @@ async function handleGachaSubmit(e) {
   const stationInput = document.getElementById('station-input');
   const station = stationInput ? stationInput.value.trim() : '';
   const step = document.getElementById('step-select').value;
+  const range = document.getElementById('range-select').value;
   const genre = document.getElementById('genre-select').value;
   const budget = document.getElementById('budget-select').value;
   const smoking = document.getElementById('smoking-select').value;
+  const openNow = document.getElementById('open-now-check').checked;
 
   if (!station && !userCoords) {
     alert('エリア（駅名や住所）を入力するか、現在地を取得してください');
@@ -64,9 +79,11 @@ async function handleGachaSubmit(e) {
   try {
     const payload = {
       step,
+      range,
       genre,
       budget,
       smoking,
+      openNow,
       excludeIds: historyIds
     };
 
@@ -91,10 +108,7 @@ async function handleGachaSubmit(e) {
 
     allFoundShops = data.results;
 
-    // スロット演出用に取得した店名リストを渡す
     await startSlotAnimation(allFoundShops);
-
-    // 当選結果の表示（先頭の1件）
     showResultView();
 
   } catch (err) {
@@ -164,15 +178,14 @@ function showResultView() {
     mapBtn.href = `https://www.google.com/maps/search/?api=1&query=${query}`;
   }
 
-  // サブ候補の初期化（当選者を除いた残りの最大20件）
   displayedCount = 0;
   const container = document.getElementById('candidate-list-container');
   if (container) container.innerHTML = '';
   
-  const subCandidates = allFoundShops.slice(1, 21); // 最大20件
+  const subCandidates = allFoundShops.slice(1, 21);
   if (subCandidates.length > 0) {
     document.getElementById('sub-candidates')?.classList.remove('hidden');
-    loadMoreCandidates(); // 最初の5件を表示
+    loadMoreCandidates();
   } else {
     document.getElementById('sub-candidates')?.classList.add('hidden');
   }
@@ -189,7 +202,6 @@ function loadMoreCandidates() {
 
   const nextBatch = subCandidates.slice(displayedCount, displayedCount + 5);
   
-  // 5件ごとに広告を挟む（最初の一回目以外、追加表示のタイミングで広告を挿入）
   if (displayedCount > 0) {
     const adDiv = document.createElement('div');
     adDiv.className = 'ad-box ad-slot sub-ad';
@@ -209,7 +221,6 @@ function loadMoreCandidates() {
   container.appendChild(ul);
   displayedCount += nextBatch.length;
 
-  // すべて表示し終えたらボタンを隠す
   if (displayedCount >= subCandidates.length) {
     if (loadMoreBtn) loadMoreBtn.style.display = 'none';
   } else {
