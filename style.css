@@ -112,10 +112,6 @@ select {
   border-color: var(--primary);
 }
 
-.btn-step.active small {
-  opacity: 1;
-}
-
 .btn-location {
   width: 100%;
   margin-top: 8px;
@@ -185,7 +181,7 @@ select {
 
 .slot-container {
   text-align: center;
-  padding: 30px 10px;
+  padding: 20px 10px;
 }
 
 .slot-text {
@@ -283,6 +279,74 @@ select {
   color: #94a3b8;
   margin: 0;
   font-weight: bold;
+}
+
+/* アコーディオン・他候補デザイン */
+.sub-candidates-box {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.btn-accordion {
+  width: 100%;
+  background: #f1f5f9;
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 0.88rem;
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+}
+
+.candidate-list-ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.candidate-list-ul li {
+  background: #ffffff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+
+.candidate-item-link {
+  color: var(--text);
+  text-decoration: none;
+  display: block;
+}
+
+.candidate-access {
+  font-size: 0.78rem;
+  color: var(--sub-text);
+}
+
+.sub-genre {
+  color: var(--primary);
+  font-size: 0.75rem;
+}
+
+.inline-ad {
+  margin: 10px 0 !important;
+  padding: 10px !important;
+}
+
+.btn-load-more {
+  width: 100%;
+  background: #e2e8f0;
+  color: var(--text);
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.82rem;
+  cursor: pointer;
+  margin-top: 8px;
 }
 
 .seo-content {
