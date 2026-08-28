@@ -1,5 +1,5 @@
 let allFoundShops = [];
-let shopHistory = {}; // 出現回数を記憶して重み付け
+let shopHistory = {}; // 重み付け用
 let keptShop = null;  // キープ中の1軒目
 let isRolling = false;
 let userCoords = null;
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     geoBtn.addEventListener('click', getLocation);
   }
 
-  // 何軒目かボタンの切り替え処理
+  // 何軒目かボタンの切り替え
   const stepBtns = document.querySelectorAll('.btn-step');
   stepBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
