@@ -1,114 +1,37 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
+// サーバーレス関数用 (Vercel / Netlify / Express などに対応)
+// デプロイ先の環境変数に HOTPEPPER_API_KEY を設定してください
 
-  const { station, lat, lng, step, range, genre, budget, smoking, openNow, excludeIds = [] } = req.body || {};
+module.exports = async (req, res) => {
+    const apiKey = process.env.HOTPEPPER_API_KEY;
+    const baseUrl = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
+    
+    const { keyword, genre } = req.query;
 
-  const apiKey = process.env.HOTPEPPER_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ message: 'APIキーが設定されていません' });
-  }
-
-  try {
-    const params = new URLSearchParams({
-      key: apiKey,
-      format: 'json',
-      count: '100'
-    });
-
-    if (lat && lng) {
-      params.append('lat', lat);
-      params.append('lng', lng);
-      
-      if (range) {
-        const rangeNum = parseInt(range, 10);
-        let apiRange = '3';
-        if (rangeNum <= 300) apiRange = '1';
-        else if (rangeNum <= 500) apiRange = '2';
-        else if (rangeNum <= 1000) apiRange = '3';
-        else if (rangeNum <= 2000) apiRange = '4';
-        else apiRange = '5';
-        params.append('range', apiRange);
-      } else {
-        params.append('range', '5');
-      }
-    } else if (station) {
-      params.append('keyword', station);
-    } else {
-      return res.status(400).json({ message: 'エリア情報を指定してください' });
+    if (!apiKey) {
+        return res.status(500).json({ error: 'API key is not configured.' });
     }
 
-    // ジャンル指定がない場合は、主要な夜間・飲み屋ジャンルを自動でまとめて検索対象にする
-    if (genre) {
-      params.append('genre', genre);
-    } else {
-      // G001:居酒屋, G002:ダイニングバー, G012:バー, G013:ラーメン, G016:中華
-      params.append('genre', 'G001,G002,G012,G013,G016');
-    }
+    try {
+        const url = new URL(baseUrl);
+        url.searchParams.append('key', apiKey);
+        url.searchParams.append('format', 'json');
+        url.searchParams.append('count', '100'); // フラットに最大100件取得しプールする
 
-    if (budget) params.append('budget', budget);
-    if (smoking !== undefined && smoking !== '') params.append('non_smoking', smoking);
-
-    const response = await fetch(`https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${params.toString()}`);
-    const data = await response.json();
-
-    let shops = data.results?.shop || [];
-
-    if (shops.length === 0) {
-      return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした' });
-    }
-
-    // 1. 距離（徒歩分数）によるフィルター
-    if (range) {
-      const rangeNum = parseInt(range, 10);
-      const maxWalkMinutes = Math.ceil(rangeNum / 80) + 2;
-
-      shops = shops.filter(shop => {
-        const accessText = (shop.access || '') + ' ' + (shop.mobile_access || '');
-        const match = accessText.match(/徒歩\s*(\d+)\s*分/);
-        if (match) {
-          const walkMin = parseInt(match[1], 10);
-          return walkMin <= maxWalkMinutes;
+        if (keyword) {
+            url.searchParams.append('keyword', keyword);
         }
-        return true;
-      });
+        
+        // ジャンル指定がある場合のみ付与 (指定なし時はフラットに全取得)
+        if (genre) {
+            url.searchParams.append('genre', genre);
+        }
+
+        const response = await fetch(url.toString());
+        const data = await response.json();
+
+        res.status(200).json(data);
+    } catch (error) {
+        console.error('Hotpepper API Fetch Error:', error);
+        res.status(500).json({ error: 'Failed to fetch data from API' });
     }
-
-    // 2. 「今営業中のみ」のフィルター
-    const isNowOpenChecked = openNow === true || openNow === 'true';
-    if (isNowOpenChecked) {
-      shops = shops.filter(shop => {
-        if (!shop.open) return true;
-        return !shop.open.includes('定休日') || shop.open.length > 5;
-      });
-    }
-
-    // 重複除外
-    let availableShops = shops.filter(shop => !excludeIds.includes(shop.id));
-    if (availableShops.length === 0) {
-      availableShops = shops;
-    }
-
-    // 全条件にマッチしたお店から完全ランダム抽出
-    const shuffled = availableShops.sort(() => 0.5 - Math.random());
-
-    const results = shuffled.slice(0, 21).map(shop => ({
-      id: shop.id,
-      name: shop.name,
-      genre: shop.genre?.name || '居酒屋',
-      catch: shop.catch || '',
-      photo: shop.photo?.pc?.l || shop.photo?.mobile?.l || '',
-      access: shop.mobile_access || shop.access || '情報なし',
-      budget: shop.budget?.average || '情報なし',
-      open: shop.open || '情報なし',
-      address: shop.address || '',
-      urls: shop.urls || {}
-    }));
-
-    return res.status(200).json({ success: true, results });
-
-  } catch (error) {
-    return res.status(500).json({ success: false, message: '検索処理に失敗しました' });
-  }
-}
+};
