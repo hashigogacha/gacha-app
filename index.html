@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ハシゴ酒ガチャ - 最高の1軒目・締め探しアプリ</title>
+  <title>ハシゴ酒ガチャ - 今夜の店選びをスマートに</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
     <header>
       <h1>🍻 ハシゴ酒ガチャ</h1>
-      <p>今日の飲み歩きや、締めの一杯をランダムに決定！</p>
+      <p>今日の飲み歩きやシメの一杯をワンタップでランダム決定！</p>
     </header>
 
     <!-- 条件入力画面 -->
@@ -47,17 +47,15 @@
           </select>
         </div>
 
+        <!-- シンプル化ジャンル選択 -->
         <div class="form-group">
           <label for="genre-select">🍽️ ジャンル</label>
           <select id="genre-select">
-            <option value="">指定なし (すべて)</option>
-            <option value="G001">居酒屋</option>
-            <option value="G013">ラーメン</option>
-            <option value="G016">中華</option>
-            <option value="G002">ダイニングバー・バル</option>
-            <option value="G004">和食</option>
-            <option value="G008">焼肉・ホルモン</option>
-            <option value="G012">バー・カクテル</option>
+            <option value="">指定なし（すべて）</option>
+            <option value="G001">居酒屋・バー</option>
+            <option value="G013">ラーメン・中華</option>
+            <option value="G008">焼肉・肉料理</option>
+            <option value="G004">和食・その他</option>
           </select>
         </div>
 
@@ -65,13 +63,11 @@
           <label for="budget-select">💰 予算目安</label>
           <select id="budget-select">
             <option value="">指定なし</option>
-            <option value="B001">～500円</option>
-            <option value="B002">501～1000円</option>
-            <option value="B003">1001～1500円</option>
-            <option value="B004">1501～2000円</option>
-            <option value="B005">2001～3000円</option>
-            <option value="B006">3001～4000円</option>
-            <option value="B007">4001～5000円</option>
+            <option value="B001">～2,000円</option>
+            <option value="B002">～3,000円</option>
+            <option value="B003">～4,000円</option>
+            <option value="B008">～5,000円</option>
+            <option value="B004">5,001円～</option>
           </select>
         </div>
 
@@ -96,7 +92,7 @@
           <p>【スポンサーリンク（広告枠）】</p>
         </div>
 
-        <button type="submit" class="btn-primary">🎲 ガチャを回す！</button>
+        <button type="submit" class="btn-primary">🎰 ガチャを回す！</button>
       </form>
     </div>
 
@@ -110,14 +106,6 @@
 
     <!-- 結果表示画面 -->
     <div id="result-card" class="card hidden">
-      <!-- 1軒目キープ表示エリア -->
-      <div id="kept-shop-area" class="hidden" style="background:#f1f5f9; padding:12px; border-radius:10px; margin-bottom:16px; border:1px dashed var(--border);">
-        <p style="font-size:0.8rem; font-weight:bold; color:var(--sub-text); margin-bottom:4px;">📍 キープ中の1軒目</p>
-        <p style="font-weight:bold; font-size:0.95rem;"><span id="kept-name">店舗名</span></p>
-        <p style="font-size:0.8rem; color:var(--sub-text);">🚶 <span id="kept-access">アクセス</span></p>
-        <a id="kept-hp-link" href="#" target="_blank" style="font-size:0.75rem; color:#3b82f6; text-decoration:none; display:inline-block; margin-top:4px;">ホットペッパーで見る ↗</a>
-      </div>
-
       <span class="badge" id="res-genre">居酒屋</span>
       <h2 id="res-name">店舗名</h2>
       <p class="catch-text" id="res-catch"></p>
@@ -140,29 +128,20 @@
       </div>
 
       <div class="action-group" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
-        <button type="button" id="keep-btn" class="btn-secondary">🔒 1軒目をキープして次を探す</button>
-        <button type="button" id="share-btn" class="btn-primary" style="background:#06c755;">📤 結果をSNS/LINEでシェア</button>
-        <button type="button" onclick="retryGacha()" class="btn-primary">🎲 もう一度ガチャを回す</button>
-        <button type="button" onclick="resetGacha()" class="btn-outline">🏠 最初から条件を変えて探す</button>
+        <button type="button" onclick="retryGacha()" class="btn-primary">🔄 もう一度ガチャを回す</button>
+        <button type="button" onclick="resetGacha()" class="btn-outline">⚙️ 条件を変更して探す</button>
       </div>
 
       <!-- 広告枠② -->
       <div class="ad-box ad-slot">
         <p>【スポンサーリンク（広告枠）】</p>
       </div>
-
-      <!-- サブ候補エリア -->
-      <div id="sub-candidates" class="sub-candidates-box hidden">
-        <h3>👀 他の候補エリア</h3>
-        <div id="candidate-list-container"></div>
-        <button type="button" id="load-more-btn" onclick="loadMoreCandidates()" class="btn-load-more">さらに表示する 👇</button>
-      </div>
     </div>
 
     <!-- SEO文章 -->
     <section class="seo-content">
-      <h2>ハシゴ酒ガチャとは？</h2>
-      <p>「ハシゴ酒ガチャ」は、今いるエリアや駅周辺で次に行くお店、あるいは今日の晩御飯や締めの一杯（ラーメンなど）をランダムに決定できる便利なグルメ検索アプリです。何度回しても新鮮な発見がある重み付け抽選システムを搭載し、お酒が入った状態やグループの飲み会でもスムーズに次の行き先を決定できます。</p>
+      <h2>「ハシゴ酒ガチャ」で今夜の店選びをスマートに</h2>
+      <p>「ハシゴ酒ガチャ」は、今いるエリアや指定した駅の周辺から、次に行くお店や締めの一杯（ラーメン等）をランダムで決定できるグルメ検索アプリです。2軒目・3軒目の店選びに迷った際にぜひご活用ください。</p>
     </section>
   </div>
 
