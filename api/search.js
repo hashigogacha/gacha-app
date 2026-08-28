@@ -71,54 +71,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2. 「今営業中のみ」の厳密なフィルター判定（昼の検索で夜営業の店を除外）
+    // 2. 「今営業中のみ」の判定（過剰な判定によるエラー回避・定休日除外メイン）
     const isNowOpenChecked = openNow === true || openNow === 'true';
     if (isNowOpenChecked) {
-      const now = new Date();
-      // 日本時間に変換
-      const jstOffset = 9 * 60;
-      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const jstDate = new Date(utc + (jstOffset * 60000));
-
-      const currentHour = jstDate.getHours();
-      const currentMin = jstDate.getMinutes();
-      const currentTimeNum = currentHour * 100 + currentMin; // 例: 14:30 -> 1430
-
       shops = shops.filter(shop => {
         if (!shop.open) return true;
-
-        // 定休日チェック
-        if (shop.open.includes('定休日') && shop.open.length <= 5) return false;
-
-        // 営業時間のテキスト解析（例: "月〜金: 17:00〜23:00" などから時間範囲を抽出）
-        const timeMatches = [...shop.open.matchAll(/(\d{1,2}):(\d{2})\s*[\uff5e\u301c\u201c\u201d\~-]\s*(\d{1,2}):(\d{2})/g)];
-        if (timeMatches.length > 0) {
-          let isOpenNow = false;
-          for (const match of timeMatches) {
-            const startH = parseInt(match[1], 10);
-            const startM = parseInt(match[2], 10);
-            let endH = parseInt(match[3], 10);
-            const endM = parseInt(match[4], 10);
-
-            const startTimeNum = startH * 100 + startM;
-            // 翌日（深夜）に跨がる場合（例: 17:00〜翌2:00 -> 26:00）
-            if (endH < startH) endH += 24;
-            const endTimeNum = endH * 100 + endM;
-
-            let checkTimeNum = currentTimeNum;
-            // 深夜2:00などで前日夜からの営業範囲に含まれるか判定
-            if (currentHour < 5 && endH >= 24) {
-              checkTimeNum += 2400;
-            }
-
-            if (checkTimeNum >= startTimeNum && checkTimeNum <= endTimeNum) {
-              isOpenNow = true;
-              break;
-            }
-          }
-          return isOpenNow;
-        }
-
+        // 定休日と明記されているもののみ除外
+        if (shop.open.includes('定休日') && shop.open.length <= 6) return false;
         return true;
       });
     }
