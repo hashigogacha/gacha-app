@@ -11,15 +11,50 @@ export default async function handler(req, res) {
   }
 
   try {
+    let searchLat = lat;
+    let searchLng = lng;
+
+    // 1. 駅名・テキスト入力の場合は内部でジオコーディング（緯度経度に変換）
+    if (!searchLat || !searchLng) {
+      if (!station) {
+        return res.status(400).json({ message: 'エリア情報を指定してください' });
+      }
+
+      const cleanStation = station.replace(/駅$/, '').trim();
+      
+      // HeartRails Express API で駅の座標を取得
+      try {
+        const geoRes = await fetch(`https://express.heartrails.com/api/json?method=getStations&name=${encodeURIComponent(cleanStation)}`);
+        const geoData = await geoRes.json();
+
+        if (geoData.response && geoData.response.station && geoData.response.station.length > 0) {
+          searchLat = geoData.response.station[0].y; // 緯度
+          searchLng = geoData.response.station[0].x; // 経度
+        } else {
+          // 駅で見つからない場合は国土地理院APIでフォールバック検索
+          const gsiRes = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(station)}`);
+          const gsiData = await gsiRes.json();
+          if (gsiData && gsiData.length > 0) {
+            searchLng = gsiData[0].geometry.coordinates[0];
+            searchLat = gsiData[0].geometry.coordinates[1];
+          }
+        }
+      } catch (e) {
+        console.error('ジオコーディング失敗:', e);
+      }
+    }
+
+    // 2. Hotpepper APIのパラメータ構築
     const params = new URLSearchParams({
       key: apiKey,
       format: 'json',
       count: '100'
     });
 
-    if (lat && lng) {
-      params.append('lat', lat);
-      params.append('lng', lng);
+    if (searchLat && searchLng) {
+      // 緯度経度が存在する場合は「正確な半径（位置情報）検索」を実行
+      params.append('lat', searchLat);
+      params.append('lng', searchLng);
       
       if (range) {
         const rangeNum = parseInt(range, 10);
@@ -31,15 +66,14 @@ export default async function handler(req, res) {
         else apiRange = '5';
         params.append('range', apiRange);
       } else {
-        params.append('range', '5');
+        params.append('range', '3'); // デフォルト1000m
       }
-    } else if (station) {
-      params.append('keyword', station);
     } else {
-      return res.status(400).json({ message: 'エリア情報を指定してください' });
+      // 万が一座標取得に失敗した場合のフォールバック（キーワード検索）
+      params.append('keyword', station);
     }
 
-    // 💡 ジャンル指定が明示的にある場合のみパラメータ追加（「指定なし」は一切送らない）
+    // ジャンル指定（「指定なし」の場合はパラメータ自体を送信しない）
     if (genre && typeof genre === 'string' && genre.trim() !== '') {
       params.append('genre', genre.trim());
     }
@@ -47,6 +81,7 @@ export default async function handler(req, res) {
     if (budget) params.append('budget', budget);
     if (smoking !== undefined && smoking !== '') params.append('non_smoking', smoking);
 
+    // 3. Hotpepper APIから店舗を取得
     const response = await fetch(`https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${params.toString()}`);
     const data = await response.json();
 
@@ -56,7 +91,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした。条件を変更してお試しください。' });
     }
 
-    // 徒歩分数判定（安全フィルター）
+    // 4. 徒歩分数判定（安全フィルター）
     if (range) {
       const rangeNum = parseInt(range, 10);
       const maxWalkMinutes = Math.ceil(rangeNum / 80) + 2;
@@ -72,7 +107,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 営業中判定（定休日明記のみ除外）
+    // 5. 営業中判定
     const isNowOpenChecked = openNow === true || openNow === 'true';
     if (isNowOpenChecked) {
       shops = shops.filter(shop => {
