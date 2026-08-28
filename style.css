@@ -172,18 +172,6 @@ select {
   background: var(--primary-hover);
 }
 
-.btn-secondary {
-  width: 100%;
-  padding: 12px;
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-bottom: 8px;
-}
-
 .btn-outline {
   width: 100%;
   padding: 12px;
@@ -297,50 +285,6 @@ select {
   font-weight: bold;
 }
 
-.sub-candidates-box {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
-
-.sub-candidates-box h3 {
-  font-size: 0.95rem;
-  margin-bottom: 12px;
-}
-
-.candidate-list-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 12px 0;
-}
-
-.candidate-list-ul li {
-  background: #f9fafb;
-  padding: 10px 12px;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  font-size: 0.85rem;
-  border: 1px solid var(--border);
-}
-
-.sub-genre {
-  color: var(--primary);
-  font-size: 0.75rem;
-}
-
-.btn-load-more {
-  width: 100%;
-  background: #e5e7eb;
-  color: var(--text);
-  border: none;
-  padding: 12px;
-  border-radius: 10px;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 0.85rem;
-  margin-top: 8px;
-}
-
 .seo-content {
   margin-top: 30px;
   font-size: 0.82rem;
@@ -348,7 +292,7 @@ select {
   line-height: 1.6;
 }
 
-.seo-content h2, .seo-content h3 {
+.seo-content h2 {
   color: var(--text);
   font-size: 1rem;
   margin-bottom: 8px;
