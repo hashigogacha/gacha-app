@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ハシゴ酒ガチャ</title>
+  <title>ハシゴ酒ガチャ - 最高の1軒目・締め探しアプリ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
     <header>
       <h1>🍻 ハシゴ酒ガチャ</h1>
-      <p>今夜の2軒目・3軒目を1タップで運まかせ決定！</p>
+      <p>今日の飲み歩きや、締めの一杯をランダムに決定！</p>
     </header>
 
     <!-- 条件入力画面 -->
@@ -18,7 +18,7 @@
       <form id="gacha-form">
         <!-- 何軒目か（ボタン選択） -->
         <div class="form-group">
-          <label>何軒目ですか？</label>
+          <label>🍺 何軒目ですか？</label>
           <div class="step-btn-group">
             <button type="button" class="btn-step" data-value="1">1軒目<br><small>がっつり</small></button>
             <button type="button" class="btn-step active" data-value="2">2軒目<br><small>サク飲み</small></button>
@@ -28,61 +28,58 @@
         </div>
 
         <div class="form-group">
-          <label for="station-input">エリア指定（駅名・住所など）</label>
-          <input type="text" id="station-input" placeholder="例：竹ノ塚駅、東京都足立区竹の塚" />
-          <button type="button" id="geo-btn" class="btn-location">📍 現在地を使用する</button>
+          <label for="station-input">📍 エリア・駅名</label>
+          <input type="text" id="station-input" placeholder="例：竹ノ塚駅、新宿" />
+          <button type="button" id="geo-btn" class="btn-location">📍 現在地を取得する</button>
           <p id="geo-status" class="geo-status-text"></p>
         </div>
 
         <!-- 距離選択 -->
         <div class="form-group">
-          <label for="range-select">検索距離</label>
+          <label for="range-select">🚶 検索範囲（徒歩距離）</label>
           <select id="range-select">
-            <option value="100">100m以内（徒歩1〜2分）</option>
-            <option value="300">300m以内（徒歩3〜4分）</option>
-            <option value="500" selected>500m以内（徒歩6〜7分）</option>
-            <option value="800">800m以内（徒歩10分）</option>
-            <option value="1000">1km以内（徒歩12〜13分）</option>
-            <option value="1500">1.5km以内（徒歩18〜19分）</option>
-            <option value="3000">3km以内</option>
-            <option value="">距離制限なし</option>
+            <option value="100">100m以内（徒歩約1分）</option>
+            <option value="300">300m以内（徒歩約3分）</option>
+            <option value="500" selected>500m以内（徒歩約6分）</option>
+            <option value="800">800m以内（徒歩約10分）</option>
+            <option value="1000">1000m以内（徒歩約12分）</option>
+            <option value="2000">2000m以内</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="genre-select">ジャンル</label>
+          <label for="genre-select">🍽️ ジャンル</label>
           <select id="genre-select">
-            <option value="">指定なし（すべて）</option>
+            <option value="">指定なし (すべて)</option>
             <option value="G001">居酒屋</option>
-            <option value="G002">ダイニングバー・バル</option>
-            <option value="G012">バー・カクテル</option>
             <option value="G013">ラーメン</option>
-            <option value="G004">和食</option>
-            <option value="G003">洋食・イタリアン</option>
-            <option value="G008">焼肉・ホルモン</option>
             <option value="G016">中華</option>
-            <option value="G017">韓国料理</option>
+            <option value="G002">ダイニングバー・バル</option>
+            <option value="G004">和食</option>
+            <option value="G008">焼肉・ホルモン</option>
+            <option value="G012">バー・カクテル</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="budget-select">予算目安</label>
+          <label for="budget-select">💰 予算目安</label>
           <select id="budget-select">
             <option value="">指定なし</option>
-            <option value="B001">〜2,000円</option>
-            <option value="B002">〜3,000円</option>
-            <option value="B003">〜4,000円</option>
-            <option value="B008">〜5,000円</option>
-            <option value="B004">5,001円〜</option>
+            <option value="B001">～500円</option>
+            <option value="B002">501～1000円</option>
+            <option value="B003">1001～1500円</option>
+            <option value="B004">1501～2000円</option>
+            <option value="B005">2001～3000円</option>
+            <option value="B006">3001～4000円</option>
+            <option value="B007">4001～5000円</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="smoking-select">禁煙・喫煙</label>
+          <label for="smoking-select">🚭 禁煙・喫煙</label>
           <select id="smoking-select">
             <option value="">指定なし</option>
             <option value="0">禁煙席あり</option>
-            <option value="1">喫煙席あり（喫煙可）</option>
           </select>
         </div>
 
@@ -99,15 +96,15 @@
           <p>【スポンサーリンク（広告枠）】</p>
         </div>
 
-        <button type="submit" class="btn-primary">🎰 ガチャを回す！</button>
+        <button type="submit" class="btn-primary">🎲 ガチャを回す！</button>
       </form>
     </div>
 
     <!-- スロット演出画面 -->
     <div id="slot-card" class="card hidden">
       <div class="slot-container">
-        <p>お店を選定中...</p>
-        <div id="slot-text" class="slot-text">🎰 ??? 🎰</div>
+        <h2>🎰 ガチャ抽選中...</h2>
+        <div id="slot-text" class="slot-text">お店を選定中</div>
       </div>
     </div>
 
@@ -130,23 +127,23 @@
       </div>
 
       <div class="info-list">
-        <p>📍 <strong>アクセス:</strong> <span id="res-access"></span></p>
-        <p>💰 <strong>予算:</strong> <span id="res-budget"></span></p>
+        <p><strong>🚶 アクセス:</strong> <span id="res-access"></span></p>
+        <p><strong>💰 平均予算:</strong> <span id="res-budget"></span></p>
         <div class="hours-box">
-          <p>🕒 <strong>営業時間:</strong> <span id="res-hours"></span></p>
+          <p><strong>🕒 営業時間:</strong> <span id="res-hours"></span></p>
         </div>
       </div>
 
       <div class="btn-group">
-        <a id="res-hp-link" href="#" target="_blank" class="btn-link hp-btn">🔥 ホットペッパーで詳細・予約</a>
+        <a id="res-hp-link" href="#" target="_blank" class="btn-link hp-btn">🌐 ホットペッパーグルメで詳細を見る</a>
         <a id="res-map-link" href="#" target="_blank" class="btn-link map-btn">🗺️ Googleマップでルート案内</a>
       </div>
 
       <div class="action-group" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
         <button type="button" id="keep-btn" class="btn-secondary">🔒 1軒目をキープして次を探す</button>
         <button type="button" id="share-btn" class="btn-primary" style="background:#06c755;">📤 結果をSNS/LINEでシェア</button>
-        <button type="button" onclick="retryGacha()" class="btn-primary">もう一度ガチャを回す 🔄</button>
-        <button type="button" onclick="resetGacha()" class="btn-outline">条件を変更する ⚙️</button>
+        <button type="button" onclick="retryGacha()" class="btn-primary">🎲 もう一度ガチャを回す</button>
+        <button type="button" onclick="resetGacha()" class="btn-outline">🏠 最初から条件を変えて探す</button>
       </div>
 
       <!-- 広告枠② -->
@@ -156,17 +153,17 @@
 
       <!-- サブ候補エリア -->
       <div id="sub-candidates" class="sub-candidates-box hidden">
-        <h3>🍺 他の候補店舗（もっと見る）</h3>
+        <h3>👀 他の候補エリア</h3>
         <div id="candidate-list-container"></div>
-        <button type="button" id="load-more-btn" onclick="loadMoreCandidates()" class="btn-load-more">さらに5件表示する 👇</button>
+        <button type="button" id="load-more-btn" onclick="loadMoreCandidates()" class="btn-load-more">さらに表示する 👇</button>
       </div>
     </div>
 
     <!-- SEO文章 -->
-    <div class="seo-content">
-      <h2>「ハシゴ酒ガチャ」で今夜の飲み屋巡りをスマートに</h2>
-      <p>「2軒目はどこに行こう？」「近くで今すぐ入れる居酒屋が見つからない」そんなハシゴ酒の悩みは「ハシゴ酒ガチャ」が解決します。</p>
-    </div>
+    <section class="seo-content">
+      <h2>ハシゴ酒ガチャとは？</h2>
+      <p>「ハシゴ酒ガチャ」は、今いるエリアや駅周辺で次に行くお店、あるいは今日の晩御飯や締めの一杯（ラーメンなど）をランダムに決定できる便利なグルメ検索アプリです。何度回しても新鮮な発見がある重み付け抽選システムを搭載し、お酒が入った状態やグループの飲み会でもスムーズに次の行き先を決定できます。</p>
+    </section>
   </div>
 
   <script src="app.js"></script>
