@@ -102,6 +102,10 @@
         <h2>🎰 ガチャ抽選中...</h2>
         <div id="slot-text" class="slot-text">お店を選定中</div>
       </div>
+      <!-- スロット中広告枠（インプレッション向上用） -->
+      <div class="ad-box ad-slot" style="margin-top:20px;">
+        <p>【スポンサーリンク（広告枠）】</p>
+      </div>
     </div>
 
     <!-- 結果表示画面 -->
@@ -135,6 +139,15 @@
       <!-- 広告枠② -->
       <div class="ad-box ad-slot">
         <p>【スポンサーリンク（広告枠）】</p>
+      </div>
+
+      <!-- アコーディオン形式の他候補エリア -->
+      <div id="sub-candidates-section" class="sub-candidates-box hidden">
+        <button type="button" id="accordion-toggle" class="btn-accordion">👀 他の候補を見る（タップで展開）</button>
+        <div id="accordion-content" class="accordion-content hidden">
+          <div id="candidate-list-container" style="margin-top:12px;"></div>
+          <button type="button" id="load-more-btn" class="btn-load-more">さらに候補を表示（＋5件）</button>
+        </div>
       </div>
     </div>
 
