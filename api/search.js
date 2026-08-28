@@ -39,7 +39,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'エリア情報を指定してください' });
     }
 
-    // ジャンル指定がある場合のみ追加（指定なし時は何も送らず全件取得）
+    // 指定なし時はジャンルパラメータを送らず全件検索
     if (genre && genre !== '') {
       params.append('genre', genre);
     }
@@ -53,10 +53,10 @@ export default async function handler(req, res) {
     let shops = data.results?.shop || [];
 
     if (shops.length === 0) {
-      return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした。条件をゆるめて再検索してください。' });
+      return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした。条件を変更してお試しください。' });
     }
 
-    // 1. 徒歩分数判定（指定距離に基づく安全なフィルタ）
+    // 徒歩分数判定
     if (range) {
       const rangeNum = parseInt(range, 10);
       const maxWalkMinutes = Math.ceil(rangeNum / 80) + 2;
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2. 営業中判定（定休日明記のみ安全に除外してエラー発生を防止）
+    // 営業中判定（定休日明記のみ除外して過剰判定を防止）
     const isNowOpenChecked = openNow === true || openNow === 'true';
     if (isNowOpenChecked) {
       shops = shops.filter(shop => {
