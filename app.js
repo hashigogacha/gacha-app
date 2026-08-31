@@ -1,294 +1,175 @@
-let allFoundShops = [];
-let isRolling = false;
-let userCoords = null;
-let displayedCount = 0;
-let currentSubCandidates = [];
-
 document.addEventListener('DOMContentLoaded', () => {
-  const gachaForm = document.getElementById('gacha-form');
-  if (gachaForm) {
-    gachaForm.addEventListener('submit', handleGachaSubmit);
-  }
+  const gachaBtn = document.getElementById('gachaBtn');
+  const reGachaBtn = document.getElementById('reGachaBtn');
+  const geoBtn = document.getElementById('geoBtn');
+  const resultSection = document.getElementById('resultSection');
+  const mainShopContent = document.getElementById('mainShopContent');
+  const candidateList = document.getElementById('candidateList');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const adContainer = document.getElementById('adContainer');
 
-  const geoBtn = document.getElementById('geo-btn');
-  if (geoBtn) {
-    geoBtn.addEventListener('click', getLocation);
-  }
+  let currentShops = [];
+  let displayedIndex = 0;
 
-  // 何軒目か（ボタン切替）
-  const stepBtns = document.querySelectorAll('.btn-step');
-  stepBtns.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const target = e.currentTarget;
-      stepBtns.forEach(b => b.classList.remove('active'));
-      target.classList.add('active');
-      const hiddenInput = document.getElementById('step-select');
-      if (hiddenInput) {
-        hiddenInput.value = target.getAttribute('data-value');
-      }
-    });
-  });
+  // ガチャ実行
+  const runGacha = async () => {
+    const location = document.getElementById('locationInput').value.trim();
+    const genre = document.getElementById('genreSelect').value;
+    const smoking = document.querySelector('input[name="smoking"]:checked').value;
 
-  // 他の候補を見る アコーディオンのトグル
-  const accordionToggle = document.getElementById('accordion-toggle');
-  if (accordionToggle) {
-    accordionToggle.addEventListener('click', toggleCandidateAccordion);
-  }
-
-  const loadMoreBtn = document.getElementById('load-more-btn');
-  if (loadMoreBtn) {
-    loadMoreBtn.addEventListener('click', loadMoreCandidates);
-  }
-});
-
-function getLocation() {
-  const statusEl = document.getElementById('geo-status');
-  if (!navigator.geolocation) {
-    if (statusEl) statusEl.textContent = 'お使いのブラウザは現在地取得に対応していません';
-    return;
-  }
-
-  if (statusEl) statusEl.textContent = '現在地を取得中...';
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      userCoords = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      };
-      const stationInput = document.getElementById('station-input');
-      if (stationInput) stationInput.value = '現在地周辺';
-      if (statusEl) statusEl.textContent = '📍 現在地を取得しました！';
-    },
-    (error) => {
-      if (statusEl) statusEl.textContent = '現在地の取得に失敗しました。';
-      userCoords = null;
+    if (!location) {
+      alert('📍 エリア・駅名を入力するか、現在地ボタンを押してください。');
+      return;
     }
-  );
-}
 
-async function handleGachaSubmit(e) {
-  if (e) e.preventDefault();
-  if (isRolling) return;
+    // ボタンのローディング表示
+    gachaBtn.disabled = true;
+    gachaBtn.innerHTML = '🎰 検索中...';
 
-  const stationInput = document.getElementById('station-input');
-  const station = stationInput ? stationInput.value.trim() : '';
-  const step = document.getElementById('step-select').value;
-  const range = document.getElementById('range-select').value;
-  const genre = document.getElementById('genre-select').value;
-  const budget = document.getElementById('budget-select').value;
-  const smoking = document.getElementById('smoking-select').value;
-  const openNow = document.getElementById('open-now-check').checked;
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ location, genre, smoking })
+      });
 
-  if (!station && !userCoords) {
-    alert('エリア（駅名や住所）を入力するか、現在地を取得してください');
-    return;
-  }
+      const data = await response.json();
 
-  showSlotView();
-  isRolling = true;
+      if (!data.shops || data.shops.length === 0) {
+        alert('条件に一致するお店が見つかりませんでした。別の条件を試してください。');
+        return;
+      }
 
-  try {
-    const payload = { step, range, genre, budget, smoking, openNow };
+      currentShops = data.shops;
+      resultSection.classList.remove('hidden');
 
-    if (station === '現在地周辺' && userCoords) {
-      payload.lat = userCoords.lat;
-      payload.lng = userCoords.lng;
+      // スロット演出（1.2秒）を挟んで結果を表示
+      await triggerSlotAnimation();
+      renderResults();
+
+    } catch (error) {
+      console.error('検索エラー:', error);
+      alert('お店の検索に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      gachaBtn.disabled = false;
+      gachaBtn.innerHTML = '🍺 ハシゴ酒ガチャを回す！';
+    }
+  };
+
+  // スロット演出（約1.2秒）
+  const triggerSlotAnimation = () => {
+    return new Promise((resolve) => {
+      let count = 0;
+      const interval = setInterval(() => {
+        const randomShop = currentShops[Math.floor(Math.random() * currentShops.length)];
+        mainShopContent.innerHTML = `
+          <div class="slot-rolling">
+            <h2>🎰 ${randomShop.name}</h2>
+            <p>${randomShop.genre_name} / ${randomShop.budget}</p>
+          </div>
+        `;
+        count++;
+        if (count > 8) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 130);
+    });
+  };
+
+  // 検索結果の描画（1件目をメイン、2〜5件目を初期オープン表示）
+  const renderResults = () => {
+    if (currentShops.length === 0) return;
+
+    // 1. メイン当選店（0番目）
+    const mainShop = currentShops[0];
+    mainShopContent.innerHTML = createShopCardHtml(mainShop, true);
+
+    // 2. 候補リスト初期化
+    candidateList.innerHTML = '';
+    displayedIndex = 1; // 1番目からスタート
+
+    // 3. 初期状態として上位5件（2〜5件目、最大4件分）を最初から表示
+    const initialEnd = Math.min(5, currentShops.length);
+    appendCandidates(displayedIndex, initialEnd);
+    displayedIndex = initialEnd;
+
+    // 5件以上あれば広告と「さらに見る」ボタンを表示
+    if (currentShops.length > 5) {
+      adContainer.classList.remove('hidden');
+      loadMoreBtn.classList.remove('hidden');
     } else {
-      payload.station = station;
+      adContainer.classList.add('hidden');
+      loadMoreBtn.classList.add('hidden');
     }
 
-    const response = await fetch('/api/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    // 結果位置へスムーズスクロール
+    resultSection.scrollIntoView({ behavior: 'smooth' });
+  };
 
-    const data = await response.json();
-
-    if (!response.ok || !data.success || !data.results || data.results.length === 0) {
-      throw new Error(data.message || '該当するお店が見つかりませんでした');
+  // 候補店舗を追加レンダリングする関数
+  const appendCandidates = (start, end) => {
+    for (let i = start; i < end; i++) {
+      const shop = currentShops[i];
+      const shopEl = document.createElement('div');
+      shopEl.className = 'candidate-card';
+      shopEl.innerHTML = createShopCardHtml(shop, false);
+      candidateList.appendChild(shopEl);
     }
+  };
 
-    allFoundShops = data.results;
+  // さらに候補を見る（+5件）
+  loadMoreBtn.addEventListener('click', () => {
+    const nextEnd = Math.min(displayedIndex + 5, currentShops.length);
+    appendCandidates(displayedIndex, nextEnd);
+    displayedIndex = nextEnd;
 
-    await startSlotAnimation(allFoundShops);
-    drawGachaAndShowResult();
-
-  } catch (err) {
-    alert(err.message || 'エラーが発生しました。条件を変更してもう一度お試しください。');
-    showInputView();
-  } finally {
-    isRolling = false;
-  }
-}
-
-function startSlotAnimation(shops) {
-  return new Promise((resolve) => {
-    const slotText = document.getElementById('slot-text');
-    let count = 0;
-
-    const interval = setInterval(() => {
-      const randomShop = shops[Math.floor(Math.random() * shops.length)];
-      if (slotText) slotText.textContent = randomShop.name;
-      count++;
-
-      if (count > 15) { // 約1.2秒演出
-        clearInterval(interval);
-        resolve();
-      }
-    }, 80);
+    if (displayedIndex >= currentShops.length) {
+      loadMoreBtn.classList.add('hidden'); // 全件表示完了
+    }
   });
-}
 
-function drawGachaAndShowResult() {
-  if (allFoundShops.length === 0) {
-    alert("候補のお店が見つかりませんでした。");
-    showInputView();
-    return;
-  }
+  // 再ガチャ（リスト内でシャッフルして再選出）
+  reGachaBtn.addEventListener('click', async () => {
+    // リストをランダムシャッフル
+    currentShops.sort(() => Math.random() - 0.5);
+    await triggerSlotAnimation();
+    renderResults();
+  });
 
-  const winner = allFoundShops[Math.floor(Math.random() * allFoundShops.length)];
-  showResultView(winner);
-}
-
-function showSlotView() {
-  document.getElementById('input-card')?.classList.add('hidden');
-  document.getElementById('result-card')?.classList.add('hidden');
-  document.getElementById('slot-card')?.classList.remove('hidden');
-}
-
-function showInputView() {
-  document.getElementById('slot-card')?.classList.add('hidden');
-  document.getElementById('result-card')?.classList.add('hidden');
-  document.getElementById('input-card')?.classList.remove('hidden');
-}
-
-function showResultView(winner) {
-  setText('res-genre', winner.genre || '居酒屋');
-  setText('res-name', winner.name || '店舗名');
-  setText('res-catch', winner.catch || '');
-
-  const imgEl = document.getElementById('res-img');
-  if (imgEl) {
-    imgEl.src = winner.photo || '';
-    imgEl.alt = winner.name;
-  }
-
-  setText('res-access', winner.access || '情報なし');
-  setText('res-budget', winner.budget || '情報なし');
-  setText('res-hours', winner.open || '情報なし');
-
-  const hpBtn = document.getElementById('res-hp-link');
-  if (hpBtn) hpBtn.href = winner.urls?.pc || '#';
-
-  const mapBtn = document.getElementById('res-map-link');
-  if (mapBtn) {
-    const query = encodeURIComponent(`${winner.name} ${winner.address || ''}`);
-    mapBtn.href = `https://www.google.com/maps/search/?api=1&query=${query}`;
-  }
-
-  // アコーディオンの初期化
-  displayedCount = 0;
-  currentSubCandidates = allFoundShops.filter(s => s.id !== winner.id);
-  
-  const container = document.getElementById('candidate-list-container');
-  if (container) container.innerHTML = '';
-
-  const subBox = document.getElementById('sub-candidates-section');
-  const accordionContent = document.getElementById('accordion-content');
-  const toggleBtn = document.getElementById('accordion-toggle');
-
-  if (currentSubCandidates.length > 0) {
-    if (subBox) subBox.classList.remove('hidden');
-    if (accordionContent) accordionContent.classList.add('hidden');
-    if (toggleBtn) toggleBtn.textContent = '👀 他の候補を見る（タップで展開）';
-  } else {
-    if (subBox) subBox.classList.add('hidden');
-  }
-
-  document.getElementById('slot-card')?.classList.add('hidden');
-  document.getElementById('result-card')?.classList.remove('hidden');
-  
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function toggleCandidateAccordion() {
-  const content = document.getElementById('accordion-content');
-  const toggleBtn = document.getElementById('accordion-toggle');
-  
-  if (!content) return;
-
-  if (content.classList.contains('hidden')) {
-    content.classList.remove('hidden');
-    if (toggleBtn) toggleBtn.textContent = '閉じる ▲';
-    if (displayedCount === 0) {
-      loadMoreCandidates();
-    }
-  } else {
-    content.classList.add('hidden');
-    if (toggleBtn) toggleBtn.textContent = '👀 他の候補を見る（タップで展開）';
-  }
-}
-
-function loadMoreCandidates() {
-  const container = document.getElementById('candidate-list-container');
-  const loadMoreBtn = document.getElementById('load-more-btn');
-  if (!container) return;
-
-  // 1回に5件ずつ表示（最大20件まで）
-  const nextBatch = currentSubCandidates.slice(displayedCount, displayedCount + 5);
-
-  const ul = document.createElement('ul');
-  ul.className = 'candidate-list-ul';
-
-  nextBatch.forEach((shop) => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <a href="${shop.urls?.pc || '#'}" target="_blank" class="candidate-item-link">
-        <strong>${shop.name}</strong> <span class="sub-genre">(${shop.genre || ''})</span><br>
-        <span class="candidate-access">📍 ${shop.access || 'アクセス情報なし'}</span>
-      </a>
+  // 店舗カードのHTML生成ヘルパー
+  const createShopCardHtml = (shop, isMain) => {
+    return `
+      <div class="shop-card-inner">
+        <img src="${shop.photo}" alt="${shop.name}" class="shop-img">
+        <div class="shop-details">
+          <h3 class="shop-title">${shop.name}</h3>
+          <p class="shop-genre">🏷️ ${shop.genre_name}</p>
+          <p class="shop-info">💰 ${shop.budget} | 🚬 ${shop.non_smoking}</p>
+          <p class="shop-address">📍 ${shop.address}</p>
+          <a href="${shop.urls}" target="_blank" rel="noopener" class="btn-shop-link">ホットペッパーで見る ↗</a>
+        </div>
+      </div>
     `;
-    ul.appendChild(li);
-  });
+  };
 
-  container.appendChild(ul);
-  displayedCount += nextBatch.length;
-
-  // 5件ごとにインライン広告を挿入
-  if (displayedCount < currentSubCandidates.length && displayedCount <= 20) {
-    const adDiv = document.createElement('div');
-    adDiv.className = 'ad-box ad-slot inline-ad';
-    adDiv.innerHTML = '<p>【スポンサーリンク（広告枠）】</p>';
-    container.appendChild(adDiv);
-  }
-
-  if (loadMoreBtn) {
-    if (displayedCount >= currentSubCandidates.length || displayedCount >= 20) {
-      loadMoreBtn.style.display = 'none';
-    } else {
-      loadMoreBtn.style.display = 'block';
+  // イベントリスナー登録
+  gachaBtn.addEventListener('click', runGacha);
+  
+  // 現在地取得ボタン
+  geoBtn.addEventListener('click', () => {
+    if (navigator.geolocation) {
+      geoBtn.innerText = '📡 取得中...';
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          document.getElementById('locationInput').value = `${pos.coords.latitude},${pos.coords.longitude}`;
+          geoBtn.innerText = '🎯 取得完了';
+        },
+        () => {
+          alert('現在地の取得に失敗しました。');
+          geoBtn.innerText = '🎯 現在地';
+        }
+      );
     }
-  }
-}
-
-// 再ガチャ（スロット画面を経由して演出＋広告インプレッション発生）
-async function retryGacha() {
-  if (isRolling) return;
-  showSlotView();
-  isRolling = true;
-
-  await startSlotAnimation(allFoundShops);
-  drawGachaAndShowResult();
-  isRolling = false;
-}
-
-function resetGacha() {
-  showInputView();
-}
-
-function setText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
+  });
+});
