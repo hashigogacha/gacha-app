@@ -1,102 +1,157 @@
-const HOTPEPPER_API_KEY = process.env.HOTPEPPER_API_KEY;
-
-// 「指定なし」検索時に使用する14ジャンル（カラオケ G011 / カフェ G014 / その他 G015 を除外）
-const ALLOWED_GENRES_FOR_DEFAULT = 'G001,G003,G004,G016,G005,G006,G002,G013,G007,G008,G017,G009,G010,G012';
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { location, range, genre, budget, openNow, smoking } = req.body;
+  const { station, lat, lng, range, genre, budget, smoking, openNow } = req.body || {};
+
+  const apiKey = process.env.HOTPEPPER_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ message: 'APIキーが設定されていません' });
+  }
 
   try {
-    let lat, lng;
+    let searchLat = lat;
+    let searchLng = lng;
 
-    // 1. ジオコーディング（現在地または国土地理院API）
-    if (location.includes(',')) {
-      [lat, lng] = location.split(',');
-    } else {
-      const geoUrl = `https://msearch.gsi.go.jp/address-search-api/search?q=${encodeURIComponent(location)}`;
-      const geoRes = await fetch(geoUrl);
-      const geoData = await geoRes.json();
-
-      if (!geoData || geoData.length === 0) {
-        return res.status(400).json({ error: '指定された住所・駅名が見つかりませんでした。' });
+    // 1. 駅名・テキスト入力の場合は内部でジオコーディング（緯度経度に変換）
+    if (!searchLat || !searchLng) {
+      if (!station) {
+        return res.status(400).json({ message: 'エリア情報を指定してください' });
       }
 
-      [lng, lat] = geoData[0].geometry.coordinates;
+      const cleanStation = station.replace(/駅$/, '').trim();
+      
+      // HeartRails Express API で駅の座標を取得
+      try {
+        const geoRes = await fetch(`https://express.heartrails.com/api/json?method=getStations&name=${encodeURIComponent(cleanStation)}`);
+        const geoData = await geoRes.json();
+
+        if (geoData.response && geoData.response.station && geoData.response.station.length > 0) {
+          searchLat = geoData.response.station[0].y; // 緯度
+          searchLng = geoData.response.station[0].x; // 経度
+        } else {
+          // 駅で見つからない場合は国土地理院APIでフォールバック検索
+          const gsiRes = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(station)}`);
+          const gsiData = await gsiRes.json();
+          if (gsiData && gsiData.length > 0) {
+            searchLng = gsiData[0].geometry.coordinates[0];
+            searchLat = gsiData[0].geometry.coordinates[1];
+          }
+        }
+      } catch (e) {
+        console.error('ジオコーディング失敗:', e);
+      }
     }
 
-    // 2. Hotpepper APIパラメータ作成
+    // 2. Hotpepper APIのパラメータ構築
     const params = new URLSearchParams({
-      key: HOTPEPPER_API_KEY,
-      lat: lat,
-      lng: lng,
-      range: range || '3', // 検索範囲（復元）
-      count: '100',
-      format: 'json'
+      key: apiKey,
+      format: 'json',
+      count: '100'
     });
 
-    // 予算指定（復元）
-    if (budget && budget.trim() !== '') {
-      params.append('budget', budget.trim());
+    if (searchLat && searchLng) {
+      // 緯度経度が存在する場合は「正確な半径（位置情報）検索」を実行
+      params.append('lat', searchLat);
+      params.append('lng', searchLng);
+      
+      if (range) {
+        const rangeNum = parseInt(range, 10);
+        let apiRange = '2';
+        if (rangeNum <= 300) apiRange = '1';
+        else if (rangeNum <= 500) apiRange = '2';
+        else if (rangeNum <= 1000) apiRange = '3';
+        else if (rangeNum <= 2000) apiRange = '4';
+        else apiRange = '5';
+        params.append('range', apiRange);
+      } else {
+        params.append('range', '2'); // デフォルト500m
+      }
+    } else {
+      // 万が一座標取得に失敗した場合のフォールバック（キーワード検索）
+      params.append('keyword', station);
     }
 
-    // 営業中のみ絞り込み（復元）
-    if (openNow) {
-      params.append('open_now', '1');
-    }
-
-    // ジャンル指定（指定なしの時はカラオケ・カフェ・その他を除いた14ジャンル）
-    if (genre && genre.trim() !== '') {
+    // ジャンル指定（「指定なし」の場合はカフェ・カラオケ等を除外した14ジャンルに制限）
+    if (genre && typeof genre === 'string' && genre.trim() !== '') {
       params.append('genre', genre.trim());
     } else {
-      params.append('genre', ALLOWED_GENRES_FOR_DEFAULT);
+      params.append('genre', 'G001,G002,G003,G004,G005,G006,G007,G008,G009,G010,G012,G013,G016,G017');
     }
 
-    // 禁煙フィルター
-    if (smoking === 'nonsmoking') {
-      params.append('non_smoking', '1');
+    if (budget) params.append('budget', budget);
+
+    // 禁煙フィルター指定時
+    if (smoking === 'no_smoking' || smoking === '0') {
+      params.append('non_smoking', '1'); // 禁煙席あり（全面禁煙含む）
     }
 
-    // APIリクエスト実行
-    const hpResponse = await fetch(`https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${params.toString()}`);
-    const hpData = await hpResponse.json();
+    // 3. Hotpepper APIから店舗を取得
+    const response = await fetch(`https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${params.toString()}`);
+    const data = await response.json();
 
-    if (!hpData.results || !hpData.results.shop) {
-      return res.status(200).json({ shops: [] });
+    let shops = data.results?.shop || [];
+
+    if (shops.length === 0) {
+      return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした。条件を変更してお試しください。' });
     }
 
-    let rawShops = hpData.results.shop;
-
-    // 喫煙可・喫煙所ありの二次フィルター
+    // 喫煙可指定時のフィルター処理（全面禁煙・禁煙席のみを除外）
     if (smoking === 'smoking') {
-      rawShops = rawShops.filter(shop => {
-        const text = `${shop.non_smoking} ${shop.kentan || ''} ${shop.service_area || ''}`.toLowerCase();
-        return text.includes('喫煙可') || text.includes('喫煙専用') || text.includes('分煙') || text.includes('加熱式');
+      shops = shops.filter(shop => {
+        const ns = shop.non_smoking || '';
+        return !ns.includes('全面禁煙') && !ns.includes('禁煙席のみ');
       });
     }
 
-    // レスポンス整形
-    const formattedShops = rawShops.map(shop => ({
+    // 4. 徒歩分数判定（安全フィルター）
+    if (range) {
+      const rangeNum = parseInt(range, 10);
+      const maxWalkMinutes = Math.ceil(rangeNum / 80) + 2;
+
+      shops = shops.filter(shop => {
+        const accessText = (shop.access || '') + ' ' + (shop.mobile_access || '');
+        const match = accessText.match(/徒歩\s*(\d+)\s*分/);
+        if (match) {
+          const walkMin = parseInt(match[1], 10);
+          return walkMin <= maxWalkMinutes;
+        }
+        return true;
+      });
+    }
+
+    // 5. 営業中判定
+    const isNowOpenChecked = openNow === true || openNow === 'true';
+    if (isNowOpenChecked) {
+      shops = shops.filter(shop => {
+        if (!shop.open) return true;
+        if (shop.open.includes('定休日') && shop.open.length <= 6) return false;
+        return true;
+      });
+    }
+
+    if (shops.length === 0) {
+      return res.status(404).json({ success: false, message: '条件に合うお店が見つかりませんでした。条件を緩めてお試しください。' });
+    }
+
+    const results = shops.map(shop => ({
       id: shop.id,
       name: shop.name,
-      genre_name: shop.genre.name,
-      budget: shop.budget.name || '予算情報なし',
-      non_smoking: shop.non_smoking || '指定なし',
-      address: shop.address,
-      photo: shop.photo.pc.l,
-      urls: shop.urls.pc
+      genre: shop.genre?.name || '居酒屋・グルメ',
+      catch: shop.catch || '',
+      photo: shop.photo?.pc?.l || shop.photo?.mobile?.l || '',
+      access: shop.mobile_access || shop.access || '情報なし',
+      budget: shop.budget?.average || '情報なし',
+      non_smoking: shop.non_smoking || '情報なし',
+      open: shop.open || '情報なし',
+      address: shop.address || '',
+      urls: shop.urls || {}
     }));
 
-    // シャッフルして返却
-    formattedShops.sort(() => Math.random() - 0.5);
-
-    return res.status(200).json({ shops: formattedShops });
+    return res.status(200).json({ success: true, results });
 
   } catch (error) {
-    console.error('API Error:', error);
-    return res.status(500).json({ error: 'サーバー内部エラーが発生しました。' });
+    return res.status(500).json({ success: false, message: '検索処理に失敗しました' });
   }
 }
