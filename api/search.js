@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       params.append('keyword', station);
     }
 
-    // ジャンル指定（「指定なし」の場合は1軒目向け12ジャンルに限定。バー・カラオケ・カフェ等を除外）
+    // ジャンル指定（「指定なし」の場合は1軒目向けの12ジャンルに制限。バー・カラオケ・カフェ等を除外）
     if (genre && typeof genre === 'string' && genre.trim() !== '') {
       params.append('genre', genre.trim());
     } else {
