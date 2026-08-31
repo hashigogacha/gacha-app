@@ -3,155 +3,361 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ハシゴ酒ガチャ - 今夜の店選びをスマートに</title>
-  <link rel="stylesheet" href="style.css">
+  <title>ハシゴ酒ガチャ</title>
+  <style>
+    :root {
+      --primary-color: #ff6b6b;
+      --secondary-color: #4ecdc4;
+      --bg-color: #f7f9fc;
+      --card-bg: #ffffff;
+      --text-color: #2d3436;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--primary-color);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #dfe6e9;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--primary-color);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .checkbox-group input {
+      width: 18px;
+      height: 18px;
+    }
+
+    .btn-search {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .btn-search:hover {
+      background-color: #ee5253;
+    }
+
+    .btn-search:active {
+      transform: scale(0.98);
+    }
+
+    .location-btn {
+      background-color: var(--secondary-color);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      margin-top: 6px;
+    }
+
+    #result-area {
+      margin-top: 24px;
+    }
+
+    .shop-card {
+      background: #fff;
+      border: 1px solid #edf2f7;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    .shop-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+
+    .shop-info {
+      padding: 16px;
+    }
+
+    .shop-genre {
+      display: inline-block;
+      background: #ffeaa7;
+      color: #d63031;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .shop-name {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .shop-catch {
+      font-size: 0.85rem;
+      color: #636e72;
+      margin-bottom: 12px;
+    }
+
+    .shop-detail {
+      font-size: 0.85rem;
+      line-height: 1.6;
+      border-top: 1px id #f1f2f6;
+      padding-top: 10px;
+    }
+
+    .shop-detail div {
+      margin-bottom: 4px;
+    }
+
+    .map-link {
+      display: block;
+      text-align: center;
+      background: #0984e3;
+      color: white;
+      text-decoration: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      font-weight: bold;
+      color: #0984e3;
+    }
+
+    .error-msg {
+      background: #ff7675;
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
-  <div id="app">
-    <header>
-      <h1>🍻 ハシゴ酒ガチャ</h1>
-      <p>今日の飲み歩きやシメの一杯をワンタップでランダム決定！</p>
-    </header>
 
-    <!-- 条件入力画面 -->
-    <div id="input-card" class="card">
-      <form id="gacha-form">
+<div class="container">
+  <h1>🍺 ハシゴ酒ガチャ</h1>
 
-        <!-- エリア・駅名入力 -->
-        <div class="form-group">
-          <label for="station-input">📍 エリア・駅名</label>
-          <input type="text" id="station-input" placeholder="例：竹ノ塚駅、新宿" />
-          <button type="button" id="geo-btn" class="btn-location">📍 現在地を取得する</button>
-          <p id="geo-status" class="geo-status-text"></p>
-        </div>
-
-        <!-- 距離選択 -->
-        <div class="form-group">
-          <label for="range-select">🚶 検索範囲（徒歩距離）</label>
-          <select id="range-select">
-            <option value="300">300m以内（徒歩約3分）</option>
-            <option value="500" selected>500m以内（徒歩約6分）</option>
-            <option value="1000">1000m以内（徒歩約12分）</option>
-            <option value="2000">2000m以内（徒歩約25分）</option>
-          </select>
-        </div>
-
-        <!-- 新7ジャンルグループ選択 -->
-        <div class="form-group">
-          <label for="genre-select">🍽️ ジャンル</label>
-          <select id="genre-select">
-            <option value="">指定なし（居酒屋・食事メイン）</option>
-            <option value="G001,G002">🍶 居酒屋・ダイニングバー・バル</option>
-            <option value="G008,G017">🥩 焼肉・肉料理・韓国料理</option>
-            <option value="G004">🍣 寿司・魚介・和食</option>
-            <option value="G013,G007,G009">🍜 ラーメン・中華・アジアン</option>
-            <option value="G006,G005">🍕 イタリアン・フレンチ・洋食</option>
-            <option value="G012">🍸 バー・スナック（お酒メイン）</option>
-            <option value="G011,G015,G016">🎤 カラオケ・その他</option>
-          </select>
-        </div>
-
-        <!-- 予算選択 -->
-        <div class="form-group">
-          <label for="budget-select">💰 予算目安</label>
-          <select id="budget-select">
-            <option value="">指定なし</option>
-            <option value="B001">～2,000円</option>
-            <option value="B002">～3,000円</option>
-            <option value="B003">～4,000円</option>
-            <option value="B008">～5,000円</option>
-            <option value="B004">5,001円～</option>
-          </select>
-        </div>
-
-        <!-- 禁煙・喫煙選択 -->
-        <div class="form-group">
-          <label for="smoking-select">🚬 禁煙・喫煙</label>
-          <select id="smoking-select">
-            <option value="">指定なし</option>
-            <option value="no_smoking">🚭 禁煙（全面禁煙・禁煙席あり）</option>
-            <option value="smoking">🚬 喫煙可（喫煙席・喫煙専用室あり）</option>
-          </select>
-        </div>
-
-        <!-- 今営業中のみ検索 -->
-        <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" id="open-now-check" checked />
-            今営業中のお店のみ検索
-          </label>
-        </div>
-
-        <!-- 広告枠① -->
-        <div class="ad-box ad-slot">
-          <p>【スポンサーリンク（広告枠）】</p>
-        </div>
-
-        <button type="submit" class="btn-primary">🎰 ガチャを回す！</button>
-      </form>
-    </div>
-
-    <!-- スロット演出画面 -->
-    <div id="slot-card" class="card hidden">
-      <div class="slot-container">
-        <h2>🎰 ガチャ抽選中...</h2>
-        <div id="slot-text" class="slot-text">お店を選定中</div>
-      </div>
-      <!-- スロット中広告枠 -->
-      <div class="ad-box ad-slot" style="margin-top:20px;">
-        <p>【スポンサーリンク（広告枠）】</p>
-      </div>
-    </div>
-
-    <!-- 結果表示画面 -->
-    <div id="result-card" class="card hidden">
-      <span class="badge" id="res-genre">居酒屋</span>
-      <h2 id="res-name">店舗名</h2>
-      <p class="catch-text" id="res-catch"></p>
-
-      <div class="img-container">
-        <img id="res-img" src="" alt="店舗画像" />
-      </div>
-
-      <div class="info-list">
-        <p><strong>🚶 アクセス:</strong> <span id="res-access"></span></p>
-        <p><strong>💰 平均予算:</strong> <span id="res-budget"></span></p>
-        <p><strong>🚭 禁煙/喫煙:</strong> <span id="res-smoking"></span></p>
-        <div class="hours-box">
-          <p><strong>🕒 営業時間:</strong> <span id="res-hours"></span></p>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <a id="res-hp-link" href="#" target="_blank" class="btn-link hp-btn">🌐 ホットペッパーグルメで詳細を見る</a>
-        <a id="res-map-link" href="#" target="_blank" class="btn-link map-btn">🗺️ Googleマップでルート案内</a>
-      </div>
-
-      <div class="action-group" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
-        <button type="button" onclick="retryGacha()" class="btn-primary">🔄 もう一度ガチャを回す</button>
-        <button type="button" onclick="resetGacha()" class="btn-outline">⚙️ 条件を変更して探す</button>
-      </div>
-
-      <!-- 広告枠② -->
-      <div class="ad-box ad-slot">
-        <p>【スポンサーリンク（広告枠）】</p>
-      </div>
-
-      <!-- 初期表示されるサブ候補一覧（5件オープン表示） -->
-      <div id="sub-candidates-section" class="sub-candidates-box hidden">
-        <h3 class="sub-candidates-title">📋 その他の候補のお店</h3>
-        <div id="candidate-list-container" style="margin-top:12px;"></div>
-        <button type="button" id="load-more-btn" class="btn-load-more">さらに候補を表示（＋5件）</button>
-      </div>
-    </div>
-
-    <!-- SEO文章 -->
-    <section class="seo-content">
-      <h2>「ハシゴ酒ガチャ」で今夜の店選びをスマートに</h2>
-      <p>「ハシゴ酒ガチャ」は、今いるエリアや指定した駅の周辺から、次に行くお店や締めの一杯（ラーメン等）をランダムで決定できるグルメ検索アプリです。2軒目・3軒目の店選びに迷った際にぜひご活用ください。</p>
-    </section>
+  <div class="form-group">
+    <label for="station-input">📍 エリア・駅名</label>
+    <input type="text" id="station-input" placeholder="例: 新宿、渋谷、池袋">
+    <button class="location-btn" onclick="getCurrentLocation()">現在地を取得</button>
   </div>
 
-  <script src="app.js"></script>
+  <div class="form-group">
+    <label for="range-select">📏 距離（徒歩範囲）</label>
+    <select id="range-select">
+      <option value="300">徒歩約3分以内 (300m)</option>
+      <option value="500" selected>徒歩約5分以内 (500m)</option>
+      <option value="1000">徒歩約10分以内 (1000m)</option>
+      <option value="2000">徒歩約20分以内 (2000m)</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="genre-select">🍽️ ジャンル</label>
+    <select id="genre-select">
+      <option value="">指定なし（1軒目にぴったりの食事・居酒屋）</option>
+      <option value="G001,G003,G016">🍶 居酒屋・大衆酒場・もんじゃ</option>
+      <option value="G004">🍣 寿司・和食・魚介</option>
+      <option value="G002,G005,G006">🍷 バル・ダイニング・イタリアン・洋食</option>
+      <option value="G008,G017">🥩 焼肉・肉料理・韓国料理</option>
+      <option value="G013,G007,G009">🍜 ラーメン・中華・アジアン</option>
+      <option value="G012">🍸 バー・スナック（お酒メイン）</option>
+      <option value="G011,G015">🎤 カラオケ・その他</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="budget-select">💰 予算</label>
+    <select id="budget-select">
+      <option value="">指定なし</option>
+      <option value="B001">〜2,000円</option>
+      <option value="B002">2,001円〜3,000円</option>
+      <option value="B003">3,001円〜4,000円</option>
+      <option value="B008">4,001円〜5,000円</option>
+      <option value="B004">5,001円〜7,000円</option>
+      <option value="B005">7,001円〜10,000円</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="smoking-select">🚬 喫煙条件</label>
+    <select id="smoking-select">
+      <option value="">指定なし</option>
+      <option value="no_smoking">🚭 禁煙希望</option>
+      <option value="smoking">🚬 喫煙可希望</option>
+    </select>
+  </div>
+
+  <div class="form-group checkbox-group">
+    <input type="checkbox" id="open-now" checked>
+    <label for="open-now" style="margin-bottom:0;">⏰ 今すぐ営業中のお店のみ</label>
+  </div>
+
+  <button class="btn-search" onclick="spinGacha()">🎰 ガチャを回す！</button>
+
+  <div id="result-area"></div>
+</div>
+
+<script>
+  let currentLat = null;
+  let currentLng = null;
+
+  function getCurrentLocation() {
+    if (!navigator.geolocation) {
+      alert("お使いのブラウザは位置情報に対応していません。");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        currentLat = position.coords.latitude;
+        currentLng = position.coords.longitude;
+        document.getElementById('station-input').value = "現在地周辺";
+        alert("現在地を取得しました！");
+      },
+      (error) => {
+        alert("位置情報の取得に失敗しました: " + error.message);
+      }
+    );
+  }
+
+  async function spinGacha() {
+    const resultArea = document.getElementById('result-area');
+    const station = document.getElementById('station-input').value.trim();
+    const range = document.getElementById('range-select').value;
+    const genre = document.getElementById('genre-select').value;
+    const budget = document.getElementById('budget-select').value;
+    const smoking = document.getElementById('smoking-select').value;
+    const openNow = document.getElementById('open-now').checked;
+
+    if (!station && (!currentLat || !currentLng)) {
+      alert("エリア・駅名を入力するか、現在地を取得してください。");
+      return;
+    }
+
+    resultArea.innerHTML = '<div class="loading">🎰 お店を厳選中...</div>';
+
+    const payload = {
+      station: station === "現在地周辺" ? "" : station,
+      lat: station === "現在地周辺" ? currentLat : null,
+      lng: station === "現在地周辺" ? currentLng : null,
+      range,
+      genre,
+      budget,
+      smoking,
+      openNow
+    };
+
+    try {
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        resultArea.innerHTML = `<div class="error-msg">${data.message || 'お店が見つかりませんでした。'}</div>`;
+        return;
+      }
+
+      // 取得結果からランダムに1件選択（ガチャ）
+      const randomIndex = Math.floor(Math.random() * data.results.length);
+      const shop = data.results[randomIndex];
+
+      const googleMapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.name + ' ' + shop.address)}`;
+
+      resultArea.innerHTML = `
+        <div class="shop-card">
+          ${shop.photo ? `<img src="${shop.photo}" alt="${shop.name}">` : ''}
+          <div class="shop-info">
+            <span class="shop-genre">${shop.genre}</span>
+            <div class="shop-name">${shop.name}</div>
+            <div class="shop-catch">${shop.catch}</div>
+            <div class="shop-detail">
+              <div>📍 <strong>アクセス:</strong> ${shop.access}</div>
+              <div>💰 <strong>平均予算:</strong> ${shop.budget}</div>
+              <div>🚬 <strong>タバコ:</strong> ${shop.non_smoking}</div>
+              <div>🕒 <strong>営業時間:</strong> ${shop.open}</div>
+            </div>
+            <a href="${googleMapUrl}" target="_blank" rel="noopener noreferrer" class="map-link">🗺️ Googleマップで開く</a>
+          </div>
+        </div>
+      `;
+
+    } catch (e) {
+      resultArea.innerHTML = '<div class="error-msg">通信エラーが発生しました。時間をおいて再度お試しください。</div>';
+    }
+  }
+</script>
+
 </body>
 </html>
