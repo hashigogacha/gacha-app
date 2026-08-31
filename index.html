@@ -3,115 +3,152 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ハシゴ酒ガチャ 🍻</title>
+  <title>ハシゴ酒ガチャ - 今夜の店選びをスマートに</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <header class="header">
+  <div id="app">
+    <header>
       <h1>🍻 ハシゴ酒ガチャ</h1>
-      <p>サクッと次のお店を決める便利ツール</p>
+      <p>今日の飲み歩きやシメの一杯をワンタップでランダム決定！</p>
     </header>
 
-    <!-- 検索フォーム -->
-    <main class="search-card">
-      <!-- 1. 位置情報・エリア入力 -->
-      <div class="form-group">
-        <label for="locationInput">📍 現在地・駅名・エリア</label>
-        <div class="input-with-btn">
-          <input type="text" id="locationInput" placeholder="例：新宿駅、渋谷区宇田川町">
-          <button type="button" id="geoBtn" class="btn-geo">🎯 現在地</button>
+    <!-- 条件入力画面 -->
+    <div id="input-card" class="card">
+      <form id="gacha-form">
+
+        <!-- エリア・駅名入力 -->
+        <div class="form-group">
+          <label for="station-input">📍 エリア・駅名</label>
+          <input type="text" id="station-input" placeholder="例：竹ノ塚駅、新宿" />
+          <button type="button" id="geo-btn" class="btn-location">📍 現在地を取得する</button>
+          <p id="geo-status" class="geo-status-text"></p>
+        </div>
+
+        <!-- 距離選択 -->
+        <div class="form-group">
+          <label for="range-select">🚶 検索範囲（徒歩距離）</label>
+          <select id="range-select">
+            <option value="300">300m以内（徒歩約3分）</option>
+            <option value="500" selected>500m以内（徒歩約6分）</option>
+            <option value="1000">1000m以内（徒歩約12分）</option>
+            <option value="2000">2000m以内（徒歩約25分）</option>
+          </select>
+        </div>
+
+        <!-- 新7ジャンルグループ選択 -->
+        <div class="form-group">
+          <label for="genre-select">🍽️ ジャンル</label>
+          <select id="genre-select">
+            <option value="">指定なし（居酒屋・食事メイン）</option>
+            <option value="G001,G002">🍶 居酒屋・ダイニングバー・バル</option>
+            <option value="G008,G017">🥩 焼肉・肉料理・韓国料理</option>
+            <option value="G004">🍣 寿司・魚介・和食</option>
+            <option value="G013,G007,G009">🍜 ラーメン・中華・アジアン</option>
+            <option value="G006,G005">🍕 イタリアン・フレンチ・洋食</option>
+            <option value="G012">🍸 バー・スナック（お酒メイン）</option>
+            <option value="G011,G015,G016">🎤 カラオケ・その他</option>
+          </select>
+        </div>
+
+        <!-- 予算選択 -->
+        <div class="form-group">
+          <label for="budget-select">💰 予算目安</label>
+          <select id="budget-select">
+            <option value="">指定なし</option>
+            <option value="B001">～2,000円</option>
+            <option value="B002">～3,000円</option>
+            <option value="B003">～4,000円</option>
+            <option value="B008">～5,000円</option>
+            <option value="B004">5,001円～</option>
+          </select>
+        </div>
+
+        <!-- 禁煙・喫煙選択 -->
+        <div class="form-group">
+          <label for="smoking-select">🚬 禁煙・喫煙</label>
+          <select id="smoking-select">
+            <option value="">指定なし</option>
+            <option value="no_smoking">🚭 禁煙（全面禁煙・禁煙席あり）</option>
+            <option value="smoking">🚬 喫煙可（喫煙席・喫煙専用室あり）</option>
+          </select>
+        </div>
+
+        <!-- 今営業中のみ検索 -->
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="open-now-check" checked />
+            今営業中のお店のみ検索
+          </label>
+        </div>
+
+        <!-- 広告枠① -->
+        <div class="ad-box ad-slot">
+          <p>【スポンサーリンク（広告枠）】</p>
+        </div>
+
+        <button type="submit" class="btn-primary">🎰 ガチャを回す！</button>
+      </form>
+    </div>
+
+    <!-- スロット演出画面 -->
+    <div id="slot-card" class="card hidden">
+      <div class="slot-container">
+        <h2>🎰 ガチャ抽選中...</h2>
+        <div id="slot-text" class="slot-text">お店を選定中</div>
+      </div>
+      <!-- スロット中広告枠 -->
+      <div class="ad-box ad-slot" style="margin-top:20px;">
+        <p>【スポンサーリンク（広告枠）】</p>
+      </div>
+    </div>
+
+    <!-- 結果表示画面 -->
+    <div id="result-card" class="card hidden">
+      <span class="badge" id="res-genre">居酒屋</span>
+      <h2 id="res-name">店舗名</h2>
+      <p class="catch-text" id="res-catch"></p>
+
+      <div class="img-container">
+        <img id="res-img" src="" alt="店舗画像" />
+      </div>
+
+      <div class="info-list">
+        <p><strong>🚶 アクセス:</strong> <span id="res-access"></span></p>
+        <p><strong>💰 平均予算:</strong> <span id="res-budget"></span></p>
+        <p><strong>🚭 禁煙/喫煙:</strong> <span id="res-smoking"></span></p>
+        <div class="hours-box">
+          <p><strong>🕒 営業時間:</strong> <span id="res-hours"></span></p>
         </div>
       </div>
 
-      <!-- 2. 検索範囲 (距離) -->
-      <div class="form-group">
-        <label for="rangeSelect">📏 検索範囲</label>
-        <select id="rangeSelect" class="form-select">
-          <option value="1">300m以内（徒歩約4分）</option>
-          <option value="2">500m以内（徒歩約6分）</option>
-          <option value="3" selected>1000m以内（徒歩約13分）</option>
-          <option value="4">2000m以内（徒歩約25分）</option>
-          <option value="5">3000m以内（車・タクシー圏内）</option>
-        </select>
+      <div class="btn-group">
+        <a id="res-hp-link" href="#" target="_blank" class="btn-link hp-btn">🌐 ホットペッパーグルメで詳細を見る</a>
+        <a id="res-map-link" href="#" target="_blank" class="btn-link map-btn">🗺️ Googleマップでルート案内</a>
       </div>
 
-      <!-- 3. ジャンル選択 (7グループ + 指定なし) -->
-      <div class="form-group">
-        <label for="genreSelect">🍽️ ジャンル</label>
-        <select id="genreSelect" class="form-select">
-          <option value="">✨ 指定なし（ハシゴ酒向け14ジャンル）</option>
-          <option value="G001,G003,G004,G016">🍶 居酒屋・和食・粉もの</option>
-          <option value="G005,G006,G002">🍕 バル・洋食・イタリアン</option>
-          <option value="G013,G007">🍜 ラーメン・中華（シメ飯）</option>
-          <option value="G008">🥩 焼肉・ホルモン</option>
-          <option value="G017,G009,G010">🌶️ 韓国・エスニック・アジアン</option>
-          <option value="G011">🎤 カラオケ・宴会</option>
-          <option value="G012">🍸 バー・ショットバー</option>
-        </select>
+      <div class="action-group" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+        <button type="button" onclick="retryGacha()" class="btn-primary">🔄 もう一度ガチャを回す</button>
+        <button type="button" onclick="resetGacha()" class="btn-outline">⚙️ 条件を変更して探す</button>
       </div>
 
-      <!-- 4. 予算選択 -->
-      <div class="form-group">
-        <label for="budgetSelect">💰 予算目安</label>
-        <select id="budgetSelect" class="form-select">
-          <option value="">指定なし</option>
-          <option value="B009">〜2,000円（サク飲み・安せんべろ）</option>
-          <option value="B001,B002">2,001円〜3,000円（標準）</option>
-          <option value="B003,B008">3,001円〜5,000円（しっかり飲み）</option>
-          <option value="B004,B005,B006">5,001円〜（プチ贅沢・高級）</option>
-        </select>
+      <!-- 広告枠② -->
+      <div class="ad-box ad-slot">
+        <p>【スポンサーリンク（広告枠）】</p>
       </div>
 
-      <!-- 5. 営業中チェック ＆ 煙草設定 -->
-      <div class="form-group checkbox-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="openNowCheck" checked>
-          <span>⏰ いま営業中のお店のみ絞り込む</span>
-        </label>
+      <!-- 初期表示されるサブ候補一覧（5件オープン表示） -->
+      <div id="sub-candidates-section" class="sub-candidates-box hidden">
+        <h3 class="sub-candidates-title">📋 その他の候補のお店</h3>
+        <div id="candidate-list-container" style="margin-top:12px;"></div>
+        <button type="button" id="load-more-btn" class="btn-load-more">さらに候補を表示（＋5件）</button>
       </div>
+    </div>
 
-      <div class="form-group">
-        <label>🚬 煙草（たばこ）の条件</label>
-        <div class="segmented-control">
-          <input type="radio" name="smoking" id="smoke_nonsmoking" value="nonsmoking" checked>
-          <label for="smoke_nonsmoking">🚭 禁煙</label>
-
-          <input type="radio" name="smoking" id="smoke_smoking" value="smoking">
-          <label for="smoke_smoking">🚬 喫煙可・喫煙所あり</label>
-
-          <input type="radio" name="smoking" id="smoke_any" value="any">
-          <label for="smoke_any">指定なし</label>
-        </div>
-      </div>
-
-      <!-- ガチャ実行ボタン -->
-      <button id="gachaBtn" class="btn-primary-gacha">
-        <span class="btn-text">🍺 ハシゴ酒ガチャを回す！</span>
-      </button>
-    </main>
-
-    <!-- 結果表示エリア -->
-    <section id="resultSection" class="result-section hidden">
-      <!-- メイン当選カード（スロット演出対象） -->
-      <div id="mainShopCard" class="main-shop-card">
-        <div class="badge">🎉 本日のメインおすすめ！</div>
-        <div id="mainShopContent">
-          <!-- JSで動的生成 -->
-        </div>
-        <button id="reGachaBtn" class="btn-secondary-gacha">🎲 もう一度ガチャを回す</button>
-      </div>
-
-      <!-- その他の候補リスト (最初から5件表示＋5件ごとに広告挿入) -->
-      <div class="candidates-container">
-        <h3>📋 その他の候補のお店</h3>
-        <div id="candidateList" class="candidate-list">
-          <!-- JSで動的に店舗と広告枠を挿入 -->
-        </div>
-
-        <!-- 追加読み込みボタン -->
-        <button id="loadMoreBtn" class="btn-more hidden">さらに候補を見る (+5件)</button>
-      </div>
+    <!-- SEO文章 -->
+    <section class="seo-content">
+      <h2>「ハシゴ酒ガチャ」で今夜の店選びをスマートに</h2>
+      <p>「ハシゴ酒ガチャ」は、今いるエリアや指定した駅の周辺から、次に行くお店や締めの一杯（ラーメン等）をランダムで決定できるグルメ検索アプリです。2軒目・3軒目の店選びに迷った際にぜひご活用ください。</p>
     </section>
   </div>
 
