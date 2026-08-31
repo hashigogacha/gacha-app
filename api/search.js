@@ -73,11 +73,11 @@ export default async function handler(req, res) {
       params.append('keyword', station);
     }
 
-    // ジャンル指定（「指定なし」の場合はカフェ・カラオケ等を除外した14ジャンルに制限）
+    // ジャンル指定（「指定なし」の場合は1軒目向け12ジャンルに限定。バー・カラオケ・カフェ等を除外）
     if (genre && typeof genre === 'string' && genre.trim() !== '') {
       params.append('genre', genre.trim());
     } else {
-      params.append('genre', 'G001,G002,G003,G004,G005,G006,G007,G008,G009,G010,G012,G013,G016,G017');
+      params.append('genre', 'G001,G002,G003,G004,G005,G006,G007,G008,G009,G013,G016,G017');
     }
 
     if (budget) params.append('budget', budget);
