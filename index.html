@@ -15,7 +15,7 @@
 
     <!-- 検索フォーム -->
     <main class="search-card">
-      <!-- 1. 位置情報・駅名入力 -->
+      <!-- 1. 位置情報・エリア入力 -->
       <div class="form-group">
         <label for="locationInput">📍 現在地・駅名・エリア</label>
         <div class="input-with-btn">
@@ -24,11 +24,23 @@
         </div>
       </div>
 
-      <!-- 2. ジャンル選択 (新7グループ + 指定なし) -->
+      <!-- 2. 検索範囲 (距離) -->
+      <div class="form-group">
+        <label for="rangeSelect">📏 検索範囲</label>
+        <select id="rangeSelect" class="form-select">
+          <option value="1">300m以内（徒歩約4分）</option>
+          <option value="2">500m以内（徒歩約6分）</option>
+          <option value="3" selected>1000m以内（徒歩約13分）</option>
+          <option value="4">2000m以内（徒歩約25分）</option>
+          <option value="5">3000m以内（車・タクシー圏内）</option>
+        </select>
+      </div>
+
+      <!-- 3. ジャンル選択 (7グループ + 指定なし) -->
       <div class="form-group">
         <label for="genreSelect">🍽️ ジャンル</label>
         <select id="genreSelect" class="form-select">
-          <option value="">✨ 指定なし（ハシゴ酒向け全14ジャンル）</option>
+          <option value="">✨ 指定なし（ハシゴ酒向け14ジャンル）</option>
           <option value="G001,G003,G004,G016">🍶 居酒屋・和食・粉もの</option>
           <option value="G005,G006,G002">🍕 バル・洋食・イタリアン</option>
           <option value="G013,G007">🍜 ラーメン・中華（シメ飯）</option>
@@ -39,7 +51,26 @@
         </select>
       </div>
 
-      <!-- 3. 禁煙・喫煙設定 -->
+      <!-- 4. 予算選択 -->
+      <div class="form-group">
+        <label for="budgetSelect">💰 予算目安</label>
+        <select id="budgetSelect" class="form-select">
+          <option value="">指定なし</option>
+          <option value="B009">〜2,000円（サク飲み・安せんべろ）</option>
+          <option value="B001,B002">2,001円〜3,000円（標準）</option>
+          <option value="B003,B008">3,001円〜5,000円（しっかり飲み）</option>
+          <option value="B004,B005,B006">5,001円〜（プチ贅沢・高級）</option>
+        </select>
+      </div>
+
+      <!-- 5. 営業中チェック ＆ 煙草設定 -->
+      <div class="form-group checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="openNowCheck" checked>
+          <span>⏰ いま営業中のお店のみ絞り込む</span>
+        </label>
+      </div>
+
       <div class="form-group">
         <label>🚬 煙草（たばこ）の条件</label>
         <div class="segmented-control">
@@ -71,20 +102,14 @@
         <button id="reGachaBtn" class="btn-secondary-gacha">🎲 もう一度ガチャを回す</button>
       </div>
 
-      <!-- その他の候補リスト (最初から上位5件表示) -->
+      <!-- その他の候補リスト (最初から5件表示＋5件ごとに広告挿入) -->
       <div class="candidates-container">
         <h3>📋 その他の候補のお店</h3>
         <div id="candidateList" class="candidate-list">
-          <!-- JSで最初に5件分レンダリング -->
+          <!-- JSで動的に店舗と広告枠を挿入 -->
         </div>
 
-        <!-- 5件目の下に入る広告インプレッション枠 -->
-        <div id="adContainer" class="ad-banner hidden">
-          <p class="ad-label">スポンサーリンク</p>
-          <div class="ad-content">【広告枠】ここにおすすめ情報や広告が表示されます</div>
-        </div>
-
-        <!-- 6件目以降の読み込みボタン -->
+        <!-- 追加読み込みボタン -->
         <button id="loadMoreBtn" class="btn-more hidden">さらに候補を見る (+5件)</button>
       </div>
     </section>
