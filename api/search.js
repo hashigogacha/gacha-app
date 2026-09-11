@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     let searchLat = lat;
     let searchLng = lng;
 
-    // 1. 駅名・テキスト入力の場合は内部でジオコーディング（緯度経度に変換）
+    // 1. 駅名・テキスト入力の場合はジオコーディング
     if (!searchLat || !searchLng) {
       if (!station) {
         return res.status(400).json({ message: 'エリア情報を指定してください' });
@@ -22,16 +22,14 @@ export default async function handler(req, res) {
 
       const cleanStation = station.replace(/駅$/, '').trim();
       
-      // HeartRails Express API で駅の座標を取得
       try {
         const geoRes = await fetch(`https://express.heartrails.com/api/json?method=getStations&name=${encodeURIComponent(cleanStation)}`);
         const geoData = await geoRes.json();
 
         if (geoData.response && geoData.response.station && geoData.response.station.length > 0) {
-          searchLat = geoData.response.station[0].y; // 緯度
-          searchLng = geoData.response.station[0].x; // 経度
+          searchLat = geoData.response.station[0].y;
+          searchLng = geoData.response.station[0].x;
         } else {
-          // 駅で見つからない場合は国土地理院APIでフォールバック検索
           const gsiRes = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(station)}`);
           const gsiData = await gsiRes.json();
           if (gsiData && gsiData.length > 0) {
@@ -52,7 +50,6 @@ export default async function handler(req, res) {
     });
 
     if (searchLat && searchLng) {
-      // 緯度経度が存在する場合は「正確な半径（位置情報）検索」を実行
       params.append('lat', searchLat);
       params.append('lng', searchLng);
       
@@ -66,14 +63,13 @@ export default async function handler(req, res) {
         else apiRange = '5';
         params.append('range', apiRange);
       } else {
-        params.append('range', '2'); // デフォルト500m
+        params.append('range', '2');
       }
     } else {
-      // 万が一座標取得に失敗した場合のフォールバック（キーワード検索）
       params.append('keyword', station);
     }
 
-    // ジャンル指定（「指定なし」の場合は1軒目向けの12ジャンルに制限。バー・カラオケ・カフェ等を除外）
+    // ジャンル指定（「指定なし」は1軒目向け12ジャンルに自動制限）
     if (genre && typeof genre === 'string' && genre.trim() !== '') {
       params.append('genre', genre.trim());
     } else {
@@ -82,12 +78,11 @@ export default async function handler(req, res) {
 
     if (budget) params.append('budget', budget);
 
-    // 禁煙フィルター指定時
     if (smoking === 'no_smoking' || smoking === '0') {
-      params.append('non_smoking', '1'); // 禁煙席あり（全面禁煙含む）
+      params.append('non_smoking', '1');
     }
 
-    // 3. Hotpepper APIから店舗を取得
+    // 3. APIリクエスト
     const response = await fetch(`https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${params.toString()}`);
     const data = await response.json();
 
@@ -97,7 +92,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ success: false, message: '該当するお店が見つかりませんでした。条件を変更してお試しください。' });
     }
 
-    // 喫煙可指定時のフィルター処理（全面禁煙・禁煙席のみを除外）
+    // 喫煙可指定時のフィルター
     if (smoking === 'smoking') {
       shops = shops.filter(shop => {
         const ns = shop.non_smoking || '';
@@ -105,7 +100,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 4. 徒歩分数判定（安全フィルター）
+    // 4. 徒歩分数判定
     if (range) {
       const rangeNum = parseInt(range, 10);
       const maxWalkMinutes = Math.ceil(rangeNum / 80) + 2;
