@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ハシゴ酒ガチャ - 今夜の店選びをスマートに</title>
   <link rel="stylesheet" href="style.css">
+  
+  <!-- バリューコマース LinkSwitch タグ挿入エリア（申請通過後にここに貼る） -->
+  <!-- <script type="text/javascript" src="//cw.valuecommerce.com/deliver/s/..." async></script> -->
 </head>
 <body>
   <div id="app">
@@ -36,7 +39,7 @@
           </select>
         </div>
 
-        <!-- 新7ジャンルグループ選択（案3適用版） -->
+        <!-- 新7ジャンルグループ選択 -->
         <div class="form-group">
           <label for="genre-select">🍽️ ジャンル</label>
           <select id="genre-select">
@@ -84,7 +87,8 @@
 
         <!-- 広告枠① -->
         <div class="ad-box ad-slot">
-          <p>【スポンサーリンク（広告枠）】</p>
+          <!-- AdSenseタグが入る場所 -->
+          <p class="ad-placeholder">スポンサーリンク</p>
         </div>
 
         <button type="submit" class="btn-primary">🎰 ガチャを回す！</button>
@@ -99,7 +103,7 @@
       </div>
       <!-- スロット中広告枠 -->
       <div class="ad-box ad-slot" style="margin-top:20px;">
-        <p>【スポンサーリンク（広告枠）】</p>
+        <p class="ad-placeholder">スポンサーリンク</p>
       </div>
     </div>
 
@@ -123,7 +127,7 @@
       </div>
 
       <div class="btn-group">
-        <a id="res-hp-link" href="#" target="_blank" class="btn-link hp-btn">🌐 ホットペッパーグルメで詳細を見る</a>
+        <a id="res-hp-link" href="#" target="_blank" class="btn-link hp-btn">🌐 ホットペッパーグルメで詳細・予約を見る</a>
         <a id="res-map-link" href="#" target="_blank" class="btn-link map-btn">🗺️ Googleマップでルート案内</a>
       </div>
 
@@ -134,10 +138,10 @@
 
       <!-- 広告枠② -->
       <div class="ad-box ad-slot">
-        <p>【スポンサーリンク（広告枠）】</p>
+        <p class="ad-placeholder">スポンサーリンク</p>
       </div>
 
-      <!-- 初期表示されるサブ候補一覧（5件オープン表示） -->
+      <!-- サブ候補一覧 -->
       <div id="sub-candidates-section" class="sub-candidates-box hidden">
         <h3 class="sub-candidates-title">📋 その他の候補のお店</h3>
         <div id="candidate-list-container" style="margin-top:12px;"></div>
@@ -145,11 +149,49 @@
       </div>
     </div>
 
-    <!-- SEO文章 -->
+    <!-- SEO・サービス説明文章 -->
     <section class="seo-content">
       <h2>「ハシゴ酒ガチャ」で今夜の店選びをスマートに</h2>
-      <p>「ハシゴ酒ガチャ」は、今いるエリアや指定した駅の周辺から、次に行くお店や締めの一杯（ラーメン等）をランダムで決定できるグルメ検索アプリです。2軒目・3軒目の店選びに迷った際にぜひご活用ください。</p>
+      <p>「ハシゴ酒ガチャ」は、今いる現在地や指定した駅周辺から、次に行くお店や締めの一杯（ラーメン・居酒屋等）をワンタップでランダム決定できるグルメ検索サービスです。1軒目の店選びから2軒目・3軒目の迷いがちなハシゴ酒まで、スマートな店探しをサポートします。</p>
+      <p class="notice-text">※当サービスでお酒を楽しむ際は、節度ある適度な飲酒を心がけ、未成年者の飲酒および飲酒運転は法律で固く禁止されています。</p>
     </section>
+
+    <!-- フッター -->
+    <footer class="app-footer">
+      <div class="footer-links">
+        <button type="button" id="open-policy-btn" class="footer-link-btn">利用規約・プライバシーポリシー・免責事項</button>
+        <a href="https://forms.gle/YOUR_GOOGLE_FORM_URL" id="contact-link" target="_blank" rel="noopener noreferrer" class="footer-link-btn">お問い合わせ</a>
+      </div>
+
+      <div class="credit-box">
+        <p>Powered by <a href="http://webservice.recruit.co.jp/" target="_blank" rel="noopener noreferrer">ホットペッパー Webサービス</a></p>
+        <a href="http://webservice.recruit.co.jp/" target="_blank" rel="noopener noreferrer">
+          <img src="http://webservice.recruit.co.jp/banner/hotpepper-s.gif" alt="ホットペッパー Webサービス" width="135" height="17" title="ホットペッパー Webサービス">
+        </a>
+      </div>
+      <p class="copyright">&copy; ハシゴ酒ガチャ All Rights Reserved.</p>
+    </footer>
+  </div>
+
+  <!-- 規約・プライバシーポリシーモーダル -->
+  <div id="policy-modal" class="modal hidden">
+    <div class="modal-content">
+      <span id="close-policy-btn" class="modal-close">&times;</span>
+      <h2>利用規約・プライバシーポリシー・免責事項</h2>
+      <div class="modal-body">
+        <h3>1. 免責事項</h3>
+        <p>当サービスで提供される店舗情報（営業時間、定休日、予算、禁煙/喫煙状況等）はホットペッパーWebサービスAPIより取得したものです。情報の正確性・最新性については万全を期しておりますが、リアルタイムの営業状況を保証するものではありません。店舗のご利用にあたっては事前にお店へ直接ご確認いただくか、公式サイトをご確認ください。当サービスの利用により生じたトラブルや損害等について、運営者は一切の責任を負いかねます。</p>
+
+        <h3>2. プライバシーポリシー（個人情報・位置情報）</h3>
+        <p>当サービスでは、周辺検索機能の提供のためにお客様の現在地（位置情報）を取得する場合があります。取得した位置情報は店舗検索の処理にのみ使用され、サーバー上に保存または第三者へ提供されることはありません。</p>
+
+        <h3>3. 広告配信・Cookieの利用について</h3>
+        <p>当サービスでは、第三者配信による広告サービス（Google AdSense等）およびアフィリエイトプログラム（バリューコマース等）を利用しています。広告配信事業者は、ユーザーの興味に応じた広告を表示するためにCookieを使用することがあります。</p>
+
+        <h3>4. 適正なご利用について</h3>
+        <p>お酒は節度をもって適量をお楽しみください。20歳未満の飲酒および飲酒運転は法律で禁止されています。</p>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
