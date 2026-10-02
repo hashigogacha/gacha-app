@@ -285,7 +285,8 @@ function renderResult(shop) {
     dist.append(small);
   }
 
-  $('res-budget').textContent = shop.budget || '情報なし';
+  const budgetText = shop.budget ? (/\d$/.test(shop.budget) ? shop.budget + '円' : shop.budget) : '情報なし';
+  $('res-budget').textContent = budgetText.replace(/\s*\/\s*/g, '\n'); // 「通常 / 宴会」を2行に分ける
 
   let openText = '営業時間は下の詳細をご確認ください';
   if (shop.openStatus === 'open') {
