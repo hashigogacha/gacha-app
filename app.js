@@ -1,215 +1,477 @@
-let currentResults = [];
-let currentCandidateIndex = 0;
-let userLat = null;
-let userLng = null;
+'use strict';
 
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('gacha-form');
-  const geoBtn = document.getElementById('geo-btn');
-  const loadMoreBtn = document.getElementById('load-more-btn');
+// ★ お問い合わせフォーム（GoogleフォームなどのURL）をここに入れてください。
+//   空のままなら「お問い合わせ」リンクは表示されません。
+const CONTACT_URL = '';
 
-  // モーダル制御
-  const policyModal = document.getElementById('policy-modal');
-  const openPolicyBtn = document.getElementById('open-policy-btn');
-  const closePolicyBtn = document.getElementById('close-policy-btn');
+const $ = (id) => document.getElementById(id);
 
-  openPolicyBtn.addEventListener('click', () => policyModal.classList.remove('hidden'));
-  closePolicyBtn.addEventListener('click', () => policyModal.classList.add('hidden'));
-  policyModal.addEventListener('click', (e) => {
-    if (e.target === policyModal) policyModal.classList.add('hidden');
-  });
+const state = {
+  geo: null, // { lat, lng }
+  pool: [], // 今回の検索結果すべて
+  queue: [], // まだ出ていないお店（出る順）
+  current: null,
+  visited: new Set(), // この検索セッションで表示したお店のid
+  origin: null,
+  subShown: 0,
+  subList: [],
+  token: 0, // 古い検索結果を無視するための番号
+  skip: null,
+  cancelDrum: null,
+  noticeTimer: null,
+};
 
-  // 位置情報取得ボタン
-  geoBtn.addEventListener('click', () => {
-    const statusText = document.getElementById('geo-status');
-    if (!navigator.geolocation) {
-      statusText.textContent = 'お使いのブラウザは位置情報に対応していません。';
-      return;
+const SMOKE_LABEL = {
+  all_no: '全席禁煙',
+  partial: '禁煙席あり',
+  smoking_ok: '喫煙可',
+  unknown: '禁煙・喫煙は要確認',
+};
+
+/* ---------- 小さな道具 ---------- */
+
+function shuffle(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function safeUrl(u) {
+  try {
+    const x = new URL(u);
+    return x.protocol === 'https:' || x.protocol === 'http:' ? x.href : '#';
+  } catch (e) {
+    return '#';
+  }
+}
+
+function checkedValue(name) {
+  return document.querySelector(`input[name="${name}"]:checked`).value;
+}
+
+function show(which) {
+  $('input-card').hidden = which !== 'input';
+  $('slot-card').hidden = which !== 'slot';
+  $('result-card').hidden = which !== 'result';
+  window.scrollTo({ top: 0 });
+}
+
+function showFormError(msg) {
+  const el = $('form-error');
+  el.textContent = msg;
+  el.hidden = false;
+}
+
+function hideFormError() {
+  $('form-error').hidden = true;
+}
+
+function showNotice(msg) {
+  const el = $('notice');
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(state.noticeTimer);
+  state.noticeTimer = setTimeout(() => { el.hidden = true; }, 6000);
+}
+
+function getFilters() {
+  return {
+    smoking: checkedValue('smoking'),
+    range: checkedValue('range'),
+    genre: $('genre').value,
+    budget: $('budget').value,
+    openNow: $('open-now').checked,
+  };
+}
+
+function updateSummary() {
+  const rangeText = document.querySelector('input[name="range"]:checked').nextElementSibling.textContent;
+  const genreSel = $('genre');
+  const genreText = genreSel.value ? genreSel.options[genreSel.selectedIndex].textContent : 'ジャンル指定なし';
+  const openText = $('open-now').checked ? '営業中のみ' : '営業時間の指定なし';
+  $('more-summary').textContent = `${rangeText}以内・${genreText}・${openText}`;
+}
+
+/* ---------- 検索 ---------- */
+
+async function search(origin, opts = {}) {
+  const token = ++state.token;
+  const stay = !!opts.stay; // 失敗しても結果画面に戻る（ハシゴ・別の場所用）
+  const f = getFilters();
+
+  const params = new URLSearchParams();
+  if (origin.lat !== undefined) {
+    params.set('lat', origin.lat.toFixed(3)); // 約100m単位
+    params.set('lng', origin.lng.toFixed(3));
+  } else {
+    params.set('station', origin.station);
+  }
+  params.set('range', f.range);
+  if (f.genre) params.set('genre', f.genre);
+  if (f.budget) params.set('budget', f.budget);
+  if (f.smoking) params.set('smoking', f.smoking);
+  if (f.openNow) params.set('openNow', '1');
+
+  setSlot('お店を探しています…', false);
+  show('slot');
+
+  const fail = (msg) => {
+    if (token !== state.token) return;
+    if (stay && state.current) {
+      show('result');
+      showNotice(msg);
+    } else {
+      show('input');
+      showFormError(msg);
     }
-    statusText.textContent = '📍 現在地を取得中...';
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        userLat = pos.coords.latitude;
-        userLng = pos.coords.longitude;
-        statusText.textContent = '✅ 現在地を取得しました！';
-        document.getElementById('station-input').value = ''; // テキスト入力をクリア
-      },
-      (err) => {
-        console.error(err);
-        statusText.textContent = '⚠️ 位置情報の取得に失敗しました。駅名を入力してください。';
-      }
-    );
-  });
+  };
 
-  // フォーム送信（ガチャ実行）
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await runGacha();
-  });
+  let data = null;
+  try {
+    const r = await fetch('/api/search?' + params.toString());
+    data = await r.json().catch(() => null);
+    if (!data) throw new Error('bad response');
+  } catch (e) {
+    fail('通信に失敗しました。電波の良い場所で、もう一度お試しください。');
+    return;
+  }
+  if (token !== state.token) return;
 
-  // さらに候補を表示ボタン
-  loadMoreBtn.addEventListener('click', () => {
-    renderSubCandidates();
-  });
-});
-
-async function runGacha() {
-  const station = document.getElementById('station-input').value.trim();
-  const range = document.getElementById('range-select').value;
-  const genre = document.getElementById('genre-select').value;
-  const budget = document.getElementById('budget-select').value;
-  const smoking = document.getElementById('smoking-select').value;
-  const openNow = document.getElementById('open-now-check').checked;
-
-  if (!userLat && !userLng && !station) {
-    alert('「エリア・駅名」を入力するか、「現在地を取得」を押してください。');
+  let results = data.success && Array.isArray(data.results) ? data.results : [];
+  if (opts.exclude) results = results.filter((s) => !opts.exclude.has(s.id));
+  if (results.length === 0) {
+    const msg = data.success
+      ? 'この近くに、まだ出ていないお店が見つかりませんでした。範囲を広げてお試しください。'
+      : data.message || 'お店が見つかりませんでした。条件を変えてお試しください。';
+    fail(msg);
     return;
   }
 
-  // 画面切り替え（スロット表示）
-  document.getElementById('input-card').classList.add('hidden');
-  document.getElementById('result-card').classList.add('hidden');
-  document.getElementById('slot-card').classList.remove('hidden');
+  state.origin = {
+    ...origin,
+    label: origin.label || (data.meta && data.meta.label) || '',
+    alternatives: origin.type === 'text' && data.meta ? data.meta.alternatives || [] : [],
+  };
+  state.pool = results;
+  const first = shuffle(results);
+  const winner = first.shift();
+  state.queue = first;
+  startDraw(winner, 2600);
+}
 
-  // スロットアニメーション演出
-  const slotTexts = ['居酒屋を捜索中...', '焼き鳥の匂いを追跡中...', 'シメのラーメンを選定中...', '本日の一杯を抽選中...'];
-  let slotIdx = 0;
-  const timer = setInterval(() => {
-    document.getElementById('slot-text').textContent = slotTexts[slotIdx % slotTexts.length];
-    slotIdx++;
-  }, 300);
+/* ---------- ドラムロール ---------- */
 
-  try {
-    const response = await fetch('/api/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        station,
-        lat: userLat,
-        lng: userLng,
-        range,
-        genre,
-        budget,
-        smoking,
-        openNow
-      })
-    });
+function setSlot(text, landed) {
+  const el = $('slot-text');
+  el.textContent = text;
+  el.classList.toggle('landed', landed);
+}
 
-    const data = await response.json();
-    clearInterval(timer);
+function startDraw(winner, totalMs) {
+  const names = shuffle(state.pool.filter((s) => s.id !== winner.id).map((s) => s.name)).slice(0, 40);
+  if (names.length === 0) names.push(winner.name);
 
-    if (!response.ok || !data.success || data.results.length === 0) {
-      alert(data.message || 'お店が見つかりませんでした。条件を変更してお試しください。');
-      resetGacha();
+  show('slot');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let finished = false;
+  let timer = null;
+
+  const done = () => {
+    show('result');
+    renderResult(winner);
+  };
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    clearTimeout(timer);
+    state.skip = null;
+    setSlot(winner.name, true);
+    timer = setTimeout(done, reduce ? 300 : 650);
+  };
+
+  state.cancelDrum = () => {
+    finished = true;
+    clearTimeout(timer);
+    state.skip = null;
+  };
+  state.skip = finish;
+
+  if (reduce) {
+    finish();
+    return;
+  }
+
+  let elapsed = 0;
+  let delay = 60;
+  let i = 0;
+  const tick = () => {
+    if (finished) return;
+    if (elapsed >= totalMs) {
+      finish();
       return;
     }
+    setSlot(names[i++ % names.length], false);
+    elapsed += delay;
+    delay = Math.min(delay * 1.1, 230); // だんだん遅くなる
+    timer = setTimeout(tick, delay);
+  };
+  tick();
+}
 
-    // シャッフルしてランダム選出
-    currentResults = shuffleArray(data.results);
-    currentCandidateIndex = 0;
+/* ---------- 結果の表示 ---------- */
 
-    // 演出終了・結果表示
-    document.getElementById('slot-card').classList.add('hidden');
-    document.getElementById('result-card').classList.remove('hidden');
-    displayMainResult(currentResults[0]);
+function smokeBadge(shop, extraClass) {
+  const b = document.createElement('span');
+  b.className = `badge smoke-${shop.smokeCls}` + (extraClass ? ' ' + extraClass : '');
+  b.textContent = SMOKE_LABEL[shop.smokeCls] || SMOKE_LABEL.unknown;
+  return b;
+}
 
-    // その他の候補を準備（2件目以降）
-    const container = document.getElementById('candidate-list-container');
-    container.innerHTML = '';
-    currentCandidateIndex = 1;
+function renderResult(shop) {
+  state.current = shop;
+  state.visited.add(shop.id);
 
-    if (currentResults.length > 1) {
-      document.getElementById('sub-candidates-section').classList.remove('hidden');
-      renderSubCandidates();
-    } else {
-      document.getElementById('sub-candidates-section').classList.add('hidden');
-    }
+  // 場所の表示
+  const o = state.origin;
+  $('res-place').textContent = `検索場所：${o.label}（候補${state.pool.length}件）`;
+  const altBox = $('alt-places');
+  const altList = $('alt-list');
+  altList.replaceChildren();
+  const alts = o.alternatives || [];
+  alts.forEach((a) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = a.label;
+    b.addEventListener('click', () => {
+      state.visited.clear();
+      search({ type: 'point', lat: a.lat, lng: a.lng, label: `${a.label}周辺` }, { stay: true });
+    });
+    altList.append(b);
+  });
+  altBox.hidden = alts.length === 0;
 
-  } catch (err) {
-    clearInterval(timer);
-    console.error(err);
-    alert('通信エラーが発生しました。再度お試しください。');
-    resetGacha();
+  // お店の情報
+  const img = $('res-img');
+  const wrap = $('res-photo-wrap');
+  wrap.hidden = !shop.photo;
+  img.onerror = () => { wrap.hidden = true; };
+  img.src = shop.photo || '';
+  img.alt = shop.photo ? `${shop.name}の写真` : '';
+
+  $('res-genre').textContent = shop.genre;
+  const smoke = $('res-smoke');
+  smoke.className = `badge smoke-${shop.smokeCls}`;
+  smoke.textContent = SMOKE_LABEL[shop.smokeCls] || SMOKE_LABEL.unknown;
+
+  $('res-name').textContent = shop.name;
+  $('res-catch').textContent = shop.catch;
+  $('res-catch').hidden = !shop.catch;
+
+  const dist = $('res-distance');
+  dist.replaceChildren();
+  if (shop.distance !== null && shop.distance !== undefined) {
+    dist.append(`検索地点から約${shop.distance}m（徒歩約${shop.walkMin}分）`);
+  } else if (shop.access) {
+    dist.append(shop.access);
+  } else {
+    dist.append('情報なし');
   }
+  if (shop.access && shop.distance !== null && shop.distance !== undefined) {
+    const small = document.createElement('small');
+    small.textContent = shop.access;
+    dist.append(small);
+  }
+
+  $('res-budget').textContent = shop.budget || '情報なし';
+
+  let openText = '営業時間は下の詳細をご確認ください';
+  if (shop.openStatus === 'open') {
+    openText = shop.closesAt ? `営業中（${shop.closesAt}まで）` : '営業中';
+  }
+  $('res-open').textContent = openText;
+  $('res-smoke-text').textContent = shop.smoking || '情報なし';
+  const hours = [shop.openText && `【営業時間】\n${shop.openText}`, shop.closeText && `【定休日】${shop.closeText}`]
+    .filter(Boolean)
+    .join('\n');
+  $('res-hours').textContent = hours || '情報なし';
+
+  $('res-hp-link').href = safeUrl(shop.url);
+  $('res-map-link').href =
+    'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(`${shop.name} ${shop.address}`);
+
+  $('hashigo-btn').disabled = shop.lat === null || shop.lat === undefined;
+  renderSubCandidates(true);
 }
 
-// メイン結果の描画
-function displayMainResult(shop) {
-  document.getElementById('res-genre').textContent = shop.genre;
-  document.getElementById('res-name').textContent = shop.name;
-  document.getElementById('res-catch').textContent = shop.catch;
-  document.getElementById('res-img').src = shop.photo || 'https://via.placeholder.com/300x200?text=No+Image';
-  document.getElementById('res-access').textContent = shop.access;
-  document.getElementById('res-budget').textContent = shop.budget;
-  document.getElementById('res-smoking').textContent = shop.non_smoking;
-  document.getElementById('res-hours').textContent = shop.open;
+function candidateItem(shop) {
+  const li = document.createElement('li');
+  li.className = 'cand';
 
-  // ホットペッパーリンク（予約・詳細）
-  const hpUrl = shop.urls?.pc || '#';
-  document.getElementById('res-hp-link').href = hpUrl;
+  const thumb = document.createElement('div');
+  thumb.className = 'cand-thumb';
+  if (shop.photo) {
+    const im = document.createElement('img');
+    im.src = shop.photo;
+    im.alt = '';
+    im.loading = 'lazy';
+    im.addEventListener('error', () => im.remove());
+    thumb.append(im);
+  }
 
-  // Googleマップリンク
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.name + ' ' + shop.address)}`;
-  document.getElementById('res-map-link').href = mapUrl;
+  const info = document.createElement('div');
+  info.className = 'cand-info';
+  const h = document.createElement('h4');
+  h.textContent = shop.name;
+  const p = document.createElement('p');
+  p.textContent = [shop.genre, shop.budget, shop.distance != null ? `${shop.distance}m` : '']
+    .filter(Boolean)
+    .join('・');
+  info.append(h, p, smokeBadge(shop));
+
+  const a = document.createElement('a');
+  a.className = 'cand-link';
+  a.href = safeUrl(shop.url);
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.textContent = '詳細';
+  a.setAttribute('aria-label', `${shop.name}の詳細`);
+
+  li.append(thumb, info, a);
+  return li;
 }
 
-// サブ候補の表示（5件ずつ展開）
-function renderSubCandidates() {
-  const container = document.getElementById('candidate-list-container');
-  const nextSlice = currentResults.slice(currentCandidateIndex, currentCandidateIndex + 5);
+function renderSubCandidates(reset) {
+  const list = $('cand-list');
+  if (reset) {
+    list.replaceChildren();
+    const queued = new Set(state.queue.map((s) => s.id));
+    const seen = state.pool.filter((s) => s.id !== state.current.id && !queued.has(s.id));
+    state.subList = [...state.queue, ...seen];
+    state.subShown = 0;
+  }
+  const next = state.subList.slice(state.subShown, state.subShown + 5);
+  next.forEach((s) => list.append(candidateItem(s)));
+  state.subShown += next.length;
 
-  nextSlice.forEach(shop => {
-    const item = document.createElement('div');
-    item.className = 'candidate-item';
-    item.innerHTML = `
-      <img src="${shop.photo || 'https://via.placeholder.com/60x60'}" alt="${shop.name}">
-      <div class="candidate-info">
-        <h4>${shop.name}</h4>
-        <p>🍺 ${shop.genre} / 💰 ${shop.budget}</p>
-      </div>
-      <a href="${shop.urls?.pc || '#'}" target="_blank" class="btn-link hp-btn" style="padding: 6px 10px; font-size: 0.75rem;">詳細</a>
-    `;
-    container.appendChild(item);
+  const remaining = state.subList.length - state.subShown;
+  $('sub-section').hidden = state.subList.length === 0;
+  const more = $('more-btn');
+  more.hidden = remaining <= 0;
+  more.textContent = `さらに表示（残り${remaining}件）`;
+}
+
+/* ---------- ボタンの動き ---------- */
+
+function retry() {
+  if (state.pool.length <= 1) {
+    showNotice('この条件では候補が1件だけです。条件を変えて、もう一度お試しください。');
+    return;
+  }
+  if (state.queue.length === 0) {
+    state.queue = shuffle(state.pool.filter((s) => s.id !== state.current.id));
+    showNotice('すべての候補を一巡したので、最初から選び直しています。');
+  }
+  const winner = state.queue.shift();
+  startDraw(winner, 1500);
+}
+
+function hashigo() {
+  const cur = state.current;
+  if (!cur || cur.lat === null || cur.lat === undefined) return;
+  search(
+    { type: 'point', lat: cur.lat, lng: cur.lng, label: `「${cur.name}」の近く` },
+    { stay: true, exclude: state.visited }
+  );
+}
+
+function resetToInput() {
+  state.token++; // 進行中の検索は無視する
+  if (state.cancelDrum) state.cancelDrum();
+  show('input');
+}
+
+/* ---------- 初期化 ---------- */
+
+document.addEventListener('DOMContentLoaded', () => {
+  // 現在地
+  $('geo-btn').addEventListener('click', () => {
+    const status = $('geo-status');
+    if (!navigator.geolocation) {
+      status.textContent = 'お使いのブラウザは位置情報に対応していません。駅名・地名を入力してください。';
+      return;
+    }
+    status.textContent = '現在地を取得しています…';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        state.geo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        $('area').value = '';
+        hideFormError();
+        status.textContent = '現在地を取得しました。';
+      },
+      (err) => {
+        state.geo = null;
+        status.textContent =
+          err.code === 1
+            ? '位置情報の利用が許可されていません。駅名・地名を入力してください。'
+            : '現在地を取得できませんでした。駅名・地名を入力してください。';
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
   });
 
-  currentCandidateIndex += nextSlice.length;
+  $('area').addEventListener('input', () => {
+    if ($('area').value) {
+      state.geo = null;
+      $('geo-status').textContent = '';
+    }
+    hideFormError();
+  });
 
-  const loadMoreBtn = document.getElementById('load-more-btn');
-  if (currentCandidateIndex >= currentResults.length) {
-    loadMoreBtn.style.display = 'none';
-  } else {
-    loadMoreBtn.style.display = 'block';
+  // 条件の要約
+  document.querySelectorAll('input[name="range"], #genre, #open-now').forEach((el) => {
+    el.addEventListener('change', updateSummary);
+  });
+  updateSummary();
+
+  // 検索
+  $('gacha-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const station = $('area').value.trim();
+    if (!station && !state.geo) {
+      showFormError('駅名・地名を入力するか、「現在地を使う」を押してください。');
+      $('area').focus();
+      return;
+    }
+    hideFormError();
+    state.visited.clear();
+    const origin = station
+      ? { type: 'text', station }
+      : { type: 'geo', lat: state.geo.lat, lng: state.geo.lng, label: '現在地周辺' };
+    search(origin);
+  });
+
+  $('skip-btn').addEventListener('click', () => { if (state.skip) state.skip(); });
+  $('retry-btn').addEventListener('click', retry);
+  $('hashigo-btn').addEventListener('click', hashigo);
+  $('change-btn').addEventListener('click', resetToInput);
+  $('more-btn').addEventListener('click', () => renderSubCandidates(false));
+
+  // 規約ダイアログ
+  const dialog = $('policy-dialog');
+  $('open-policy').addEventListener('click', () => {
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', '');
+  });
+  $('close-policy').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+  // お問い合わせリンク
+  if (CONTACT_URL) {
+    const c = $('contact-link');
+    c.href = CONTACT_URL;
+    c.hidden = false;
   }
-}
-
-// 配列シャッフル関数
-function shuffleArray(array) {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-// もう一度回す
-function retryGacha() {
-  if (currentResults.length > 1) {
-    currentResults = shuffleArray(currentResults);
-    displayMainResult(currentResults[0]);
-    document.getElementById('candidate-list-container').innerHTML = '';
-    currentCandidateIndex = 1;
-    renderSubCandidates();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  } else {
-    runGacha();
-  }
-}
-
-// 条件変更
-function resetGacha() {
-  document.getElementById('result-card').classList.add('hidden');
-  document.getElementById('slot-card').classList.add('hidden');
-  document.getElementById('input-card').classList.remove('hidden');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+});
